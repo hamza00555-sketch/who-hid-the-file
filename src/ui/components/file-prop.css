@@ -1,0 +1,63 @@
+.file-prop {
+  overflow: visible;
+  filter: drop-shadow(0 14px 24px oklch(0.12 0.05 265 / 0.6));
+}
+
+.file-prop--breathing .file-prop__stack {
+  animation: breathe 3s var(--ease-in-out) infinite;
+  transform-origin: 100px 140px;
+}
+
+.file-prop--taken .file-prop__puff {
+  animation: puff-drift 5s var(--ease-in-out) infinite;
+  transform-origin: 100px 92px;
+}
+
+.file-prop--taken .file-prop__mark {
+  animation: mark-pop 2.4s var(--ease-out) infinite;
+  transform-origin: 100px 84px;
+}
+
+.file-prop--returned .file-prop__sparks {
+  animation: spark 900ms var(--ease-out) 2;
+}
+
+@keyframes puff-drift {
+  0%,
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.04) translateY(-3px);
+    opacity: 1;
+  }
+}
+
+@keyframes mark-pop {
+  0%,
+  70%,
+  100% {
+    transform: scale(1) rotate(-3deg);
+  }
+  80% {
+    transform: scale(1.12) rotate(3deg);
+  }
+}
+
+@keyframes spark {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .file-prop * {
+    animation: none !important;
+  }
+}

@@ -1,0 +1,137 @@
+.home__badges {
+  position: relative;
+  z-index: var(--z-sticky);
+  display: flex;
+  justify-content: flex-start;
+}
+
+.home__body {
+  gap: var(--s-4);
+}
+
+/* المسرح: الشخصيات والملف — تكوين واحد لا شبكة بطاقات */
+.home__stage {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(-2rem, -4vw, 0rem);
+  width: 100%;
+  min-height: 12rem;
+}
+
+.home__char {
+  flex: none;
+  animation: sway 6s var(--ease-in-out) infinite;
+}
+.home__char--a {
+  margin-inline-end: -2.5rem;
+  animation-delay: -1.4s;
+  opacity: 0.92;
+}
+.home__char--b {
+  margin-inline-end: -1rem;
+  animation-delay: -0.5s;
+  z-index: 2;
+}
+.home__char--c {
+  margin-inline-start: -1rem;
+  animation-delay: -2.2s;
+  z-index: 2;
+}
+.home__char--d {
+  margin-inline-start: -2.5rem;
+  animation-delay: -3.1s;
+  opacity: 0.92;
+}
+
+.home__file {
+  flex: none;
+  margin-bottom: -0.5rem;
+  z-index: 3;
+}
+
+@media (max-width: 620px) {
+  .home__char--a,
+  .home__char--d {
+    display: none;
+  }
+  .home__char {
+    height: 130px;
+  }
+}
+
+.home__title h1 {
+  font-size: clamp(2.6rem, 11vw, 5rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: var(--paper);
+  text-shadow: 4px 4px 0 var(--ink);
+}
+
+.home__tagline {
+  font-size: clamp(1.05rem, 3.4vw, 1.5rem);
+  color: var(--amber);
+  font-weight: 700;
+  margin-top: var(--s-2);
+  max-width: none;
+}
+
+.home__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  align-items: center;
+  width: 100%;
+  max-width: 22rem;
+}
+
+.home__join {
+  max-width: 24rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  align-items: center;
+}
+
+.home__label {
+  font-weight: 700;
+}
+
+.home__code-input {
+  width: 100%;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  font-weight: 900;
+  letter-spacing: 0.4em;
+  text-indent: 0.4em;
+  padding: var(--s-3);
+  background: var(--night-deep);
+  border: var(--stroke) solid var(--ink);
+  border-radius: var(--r-md);
+  color: var(--amber);
+}
+
+.home__resume {
+  max-width: 26rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  align-items: center;
+}
+
+.home__resume p {
+  margin: 0;
+}
+
+.home__error {
+  color: var(--coral);
+  font-weight: 700;
+}
+
+.home__footer {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-top: auto;
+  padding-top: var(--s-5);
+}

@@ -1,0 +1,218 @@
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--night-deep);
+  color: var(--text);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  overscroll-behavior: none;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: clamp(1.9rem, 6vw, 3.6rem);
+}
+h2 {
+  font-size: clamp(1.4rem, 4.2vw, 2.4rem);
+}
+h3 {
+  font-size: clamp(1.1rem, 3vw, 1.5rem);
+}
+
+p {
+  text-wrap: pretty;
+  max-width: 62ch;
+}
+
+:focus-visible {
+  outline: 3px solid var(--sky);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--sky);
+  color: var(--ink);
+}
+
+/* ── تخطيط الشاشة: مشهد كامل الارتفاع بأمان الحواف ── */
+.screen {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  /* شبكة أمان: الصفحة لا تُمرَّر أفقيًا أبدًا مهما اتسع عنصر داخلها */
+  overflow-x: clip;
+  padding: max(var(--s-4), env(safe-area-inset-top)) var(--s-4)
+    max(var(--s-4), env(safe-area-inset-bottom));
+  position: relative;
+  isolation: isolate;
+}
+
+.screen__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  /* safe center: يتوسّط حين يتّسع، ولا يقص الأعلى حين يطول المحتوى */
+  justify-content: safe center;
+  align-items: center;
+  text-align: center;
+  z-index: var(--z-content);
+  width: 100%;
+  max-width: 46rem;
+  margin-inline: auto;
+  min-height: 0;
+}
+
+.screen--host .screen__body {
+  max-width: 72rem;
+}
+
+/* ── الطبقة الخلفية للمشهد ── */
+.scene-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-scene);
+  pointer-events: none;
+}
+
+/* ── أدوات ── */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  width: 100%;
+}
+.row {
+  display: flex;
+  gap: var(--s-3);
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.grow {
+  flex: 1;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.eyebrow-note {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.lede {
+  font-size: clamp(1.05rem, 2.6vw, 1.35rem);
+  color: var(--text-muted);
+}
+
+@keyframes blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.06);
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-2.5%) scale(1.015);
+  }
+}
+
+@keyframes sway {
+  0%,
+  100% {
+    transform: rotate(-1.2deg);
+  }
+  50% {
+    transform: rotate(1.2deg);
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

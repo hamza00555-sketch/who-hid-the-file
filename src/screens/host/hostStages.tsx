@@ -1,0 +1,833 @@
+/**
+ * مشاهد الجهاز الرئيسي. كل مشهد مقروء من مسافة حول الطاولة:
+ * نص كبير، حالة واحدة واضحة، ورسم يشرح المطلوب قبل قراءة الكلمات.
+ */
+
+import { useEffect, useMemo, useRef, useState } from 'react';
+import QRCode from 'qrcode';
+import { GAME_CONFIG, slotLabel } from '../../config/game.config';
+import { ROSTER } from '../../game/roster';
+import { rulesFor, isSupportedPlayerCount } from '../../game/rules';
+import { neighboursOf } from '../../game/seating';
+import type {
+  Phase,
+  PlayerProgress,
+  PlayerPublic,
+  RoomSettings,
+  RoundResults,
+} from '../../game/types';
+import { slotOfNightPhase } from '../../game/types';
+import { Character } from '../../ui/components/Character';
+import { Dice } from '../../ui/components/Dice';
+import { FileProp } from '../../ui/components/FileProp';
+import { SeatRing, SeatingEditor } from '../../ui/components/Table';
+import {
+  Badge,
+  Button,
+  CountdownRing,
+  Panel,
+  ProgressPips,
+  StageTitle,
+  WaitingNote,
+} from '../../ui/components/kit';
+
+type Progress = Record<string, PlayerProgress>;
+
+function doneCount(progress: Progress, players: PlayerPublic[], key: keyof PlayerProgress) {
+  return players.filter((player) => progress[player.id]?.[key]).length;
+}
+
+/* ══════════════════════════ الردهة ══════════════════════════ */
+
+export function HostLobbyStage({
+  code,
+  joinUrl,
+  players,
+  settings,
+  onSettings,
+  onReorder,
+  onStart,
+}: {
+  code: string;
+  joinUrl: string;
+  players: PlayerPublic[];
+  settings: RoomSettings;
+  onSettings: (patch: Partial<RoomSettings>) => void;
+  onReorder: (from: number, to: number) => void;
+  onStart: () => void;
+}) {
+  const [tab, setTab] = useState<'join' | 'seating' | 'settings'>('join');
+  const readyCount = players.filter((player) => player.ready).length;
+  const countOk = isSupportedPlayerCount(players.length);
+  const allReady = players.length > 0 && readyCount === players.length;
+  const allConnected = players.every((player) => player.connected);
+  const canStart = countOk && allReady && allConnected;
+
+  const blockers = [
+    !countOk && `العدد الحالي ${players.length} — المطلوب من ${GAME_CONFIG.players.min} إلى ${GAME_CONFIG.players.max}`,
+    countOk && !allReady && `${players.length - readyCount} لاعب لم يضغط «أنا جاهز»`,
+    !allConnected && 'يوجد جهاز منقطع',
+  ].filter(Boolean) as string[];
+
+  return (
+    <div className="lobby">
+      <div className="lobby__main">
+        <nav className="lobby__tabs" role="tablist">
+          {(
+            [
+              ['join', 'الانضمام'],
+              ['seating', 'ترتيب الجلوس'],
+              ['settings', 'الإعدادات'],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              role="tab"
+              type="button"
+              aria-selected={tab === id}
+              className="lobby__tab"
+              onClick={() => setTab(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+
+        {tab === 'join' && <JoinPanel code={code} joinUrl={joinUrl} />}
+
+        {tab === 'seating' && (
+          <Panel>
+            <h3>رتّب اللاعبين كما يجلسون فعلًا</h3>
+            <p className="eyebrow-note">
+              الترتيب من المقعد ١ مع عقارب الساعة. اللاعب التالي يجلس عن يسار سابقه.
+            </p>
+            <SeatingEditor players={players} onReorder={onReorder} />
+          </Panel>
+        )}
+
+        {tab === 'settings' && <SettingsPanel settings={settings} onChange={onSettings} />}
+      </div>
+
+      <aside className="lobby__side">
+        <div className="lobby__count">
+          <strong>{players.length}</strong>
+          <span>
+            {players.length === 0
+              ? 'لم ينضم أحد بعد'
+              : `${readyCount} جاهزون من ${players.length} متصلين`}
+          </span>
+        </div>
+
+        <SeatRing players={players} caption={players.length ? undefined : 'بانتظار اللاعبين'} />
+
+        {/* شارات مدمجة لا قائمة طويلة: الأسماء معروضة أصلًا حول الطاولة */}
+        <ul className="lobby__roster">
+          {players.map((player) => (
+            <li
+              key={player.id}
+              data-state={
+                !player.connected ? 'offline' : player.ready ? 'ready' : 'waiting'
+              }
+            >
+              <span aria-hidden="true">
+                {!player.connected ? '⚡' : player.ready ? '✓' : '…'}
+              </span>
+              {player.name}
+            </li>
+          ))}
+        </ul>
+      </aside>
+
+      <div className="lobby__bar">
+        {blockers.length > 0 ? (
+          <ul className="lobby__blockers">
+            {blockers.map((text) => (
+              <li key={text}>{text}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="lobby__ready-note">كل شيء جاهز — ابدؤوا متى شئتم.</p>
+        )}
+        <Button size="lg" onClick={onStart} disabled={!canStart}>
+          ابدأ توزيع الأدوار
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function JoinPanel({ code, joinUrl }: { code: string; joinUrl: string }) {
+  const [qr, setQr] = useState<string | null>(null);
+
+  useEffect(() => {
+    void QRCode.toDataURL(joinUrl, {
+      margin: 1,
+      width: 420,
+      color: { dark: '#101a33', light: '#f7f9ff' },
+    })
+      .then(setQr)
+      .catch(() => setQr(null));
+  }, [joinUrl]);
+
+  return (
+    <Panel tone="paper" className="join-panel">
+      <div className="join-panel__qr">
+        {qr ? (
+          <img src={qr} alt={`رمز QR للانضمام إلى الجلسة ${code}`} />
+        ) : (
+          <WaitingNote>جارٍ توليد رمز QR</WaitingNote>
+        )}
+      </div>
+      <div className="join-panel__text">
+        <p className="join-panel__label">امسحوا الرمز أو اكتبوا</p>
+        <p className="join-panel__code">{code}</p>
+        <p className="join-panel__url">{joinUrl}</p>
+        <p className="join-panel__hint">
+          كل لاعب يفتح الرابط على جهازه، يكتب اسمه، يختار شخصيته، ثم يضغط «أنا جاهز».
+        </p>
+      </div>
+    </Panel>
+  );
+}
+
+function SettingsPanel({
+  settings,
+  onChange,
+}: {
+  settings: RoomSettings;
+  onChange: (patch: Partial<RoomSettings>) => void;
+}) {
+  return (
+    <Panel className="settings-panel">
+      <h3>إعدادات الجولة</h3>
+
+      <fieldset className="settings-panel__field">
+        <legend>طريقة تحديد موعد الاستيقاظ</legend>
+        <div className="settings-panel__choices">
+          <Choice
+            checked={settings.diceMode === 'digital'}
+            onChange={() => onChange({ diceMode: 'digital' })}
+            title="نرد رقمي داخل التطبيق"
+            note="لا يحتاج ملحقات — الوضع الافتراضي"
+          />
+          <Choice
+            checked={settings.diceMode === 'physical'}
+            onChange={() => onChange({ diceMode: 'physical' })}
+            title="نرد حقيقي"
+            note="كل لاعب يرمي نرده في كوبه ويُدخل الرقم"
+          />
+        </div>
+      </fieldset>
+
+      <fieldset className="settings-panel__field">
+        <legend>مصطلح المواعيد</legend>
+        <div className="settings-panel__choices">
+          <Choice
+            checked={settings.slotNaming === 'nights'}
+            onChange={() => onChange({ slotNaming: 'nights' })}
+            title="الليلة الأولى … السادسة"
+          />
+          <Choice
+            checked={settings.slotNaming === 'hours'}
+            onChange={() => onChange({ slotNaming: 'hours' })}
+            title="الساعة الواحدة … السادسة"
+          />
+        </div>
+      </fieldset>
+
+      <label className="settings-panel__row">
+        <span>مدة العد التنازلي في كل مرحلة</span>
+        <input
+          type="range"
+          min={6}
+          max={20}
+          value={settings.nightCountdownSeconds}
+          onChange={(event) =>
+            onChange({ nightCountdownSeconds: Number(event.target.value) })
+          }
+        />
+        <output>{settings.nightCountdownSeconds} ثانية</output>
+      </label>
+
+      <label className="settings-panel__row">
+        <span>مدة النقاش</span>
+        <input
+          type="range"
+          min={60}
+          max={420}
+          step={30}
+          value={settings.discussionSeconds}
+          onChange={(event) => onChange({ discussionSeconds: Number(event.target.value) })}
+        />
+        <output>{Math.round(settings.discussionSeconds / 60)} دقيقة</output>
+      </label>
+
+      <label className="settings-panel__row settings-panel__row--switch">
+        <span>الصوت والتعليق</span>
+        <input
+          type="checkbox"
+          checked={settings.voiceEnabled}
+          onChange={(event) => onChange({ voiceEnabled: event.target.checked })}
+        />
+      </label>
+    </Panel>
+  );
+}
+
+function Choice({
+  checked,
+  onChange,
+  title,
+  note,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  title: string;
+  note?: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={checked}
+      className="choice"
+      data-checked={checked || undefined}
+      onClick={onChange}
+    >
+      <span className="choice__mark" aria-hidden="true" />
+      <span>
+        <strong>{title}</strong>
+        {note && <small>{note}</small>}
+      </span>
+    </button>
+  );
+}
+
+/* ══════════════════════════ توزيع الأدوار ══════════════════════════ */
+
+export function HostRolesStage({
+  players,
+  progress,
+}: {
+  players: PlayerPublic[];
+  progress: Progress;
+}) {
+  const done = doneCount(progress, players, 'roleAck');
+
+  return (
+    <>
+      <StageTitle
+        kicker="وُزّعت الأدوار"
+        title="انظروا إلى أجهزتكم"
+        note="دور كل لاعب وصل إلى جهازه وحده. لا تعرضوا شاشاتكم لأحد."
+      />
+      <div className="host-strip" aria-hidden="true">
+        {players.slice(0, 6).map((player, index) => (
+          <Character
+            key={player.id}
+            characterId={player.avatarId}
+            state={index % 2 ? 'suspicious' : 'hiding'}
+            size={130}
+          />
+        ))}
+      </div>
+      <Panel className="host-progress">
+        <p>
+          <strong>{done}</strong> من {players.length} أكّدوا استلام أدوارهم
+        </p>
+        <ProgressPips done={done} total={players.length} />
+        <ul className="host-progress__names">
+          {players.map((player) => (
+            <li key={player.id} data-done={progress[player.id]?.roleAck || undefined}>
+              {player.name}
+            </li>
+          ))}
+        </ul>
+      </Panel>
+    </>
+  );
+}
+
+/* ══════════════════════════ النرد ══════════════════════════ */
+
+export function HostDiceStage({
+  players,
+  progress,
+  settings,
+}: {
+  players: PlayerPublic[];
+  progress: Progress;
+  settings: RoomSettings;
+}) {
+  const done = doneCount(progress, players, 'diceAck');
+  const rules = isSupportedPlayerCount(players.length) ? rulesFor(players.length) : null;
+
+  return (
+    <>
+      <StageTitle
+        kicker={settings.diceMode === 'digital' ? 'نرد رقمي' : 'نرد حقيقي'}
+        title="حدّدوا مواعيد استيقاظكم"
+        note={
+          settings.diceMode === 'digital'
+            ? 'كل لاعب يرمي نرده على جهازه ويرى نتيجته وحده.'
+            : 'كل لاعب يرمي نرده داخل كوبه، يراه وحده، ثم يُدخل الرقم في جهازه.'
+        }
+      />
+
+      <div className="host-dice" aria-hidden="true">
+        <Dice value={null} rolling size={130} />
+        {rules?.dicePerPlayer === 2 && <Dice value={null} rolling size={130} tone="sky" />}
+      </div>
+
+      {rules?.dicePerPlayer === 2 && (
+        <Panel tone="amber">
+          <strong>وضع الأربعة لاعبين:</strong> كل لاعب يحصل على نتيجتين. أعضاء الفريق
+          يختارون واحدة فقط.
+        </Panel>
+      )}
+
+      <Panel className="host-progress">
+        <p>
+          <strong>{done}</strong> من {players.length} عرفوا مواعيدهم
+        </p>
+        <ProgressPips done={done} total={players.length} />
+      </Panel>
+    </>
+  );
+}
+
+/* ══════════════════════════ الاستعداد ══════════════════════════ */
+
+export function HostReadyStage({
+  players,
+  onStart,
+}: {
+  players: PlayerPublic[];
+  onStart: () => void;
+}) {
+  const checks = [
+    { text: `${GAME_CONFIG.prop.placeInstruction}`, ok: true },
+    { text: 'ضعوا الأجهزة أمام أصحابها والشاشات إلى الأسفل', ok: true },
+    { text: 'ارفعوا صوت الجهاز الرئيسي', ok: true },
+    { text: 'كل الأجهزة متصلة', ok: players.every((player) => player.connected) },
+  ];
+
+  return (
+    <>
+      <StageTitle kicker="قبل أن يبدأ الليل" title="استعدوا" />
+
+      <div className="ready-scene">
+        <FileProp state="breathing" size={190} />
+      </div>
+
+      <Panel tone="paper" className="ready-list">
+        <ul>
+          {checks.map((check) => (
+            <li key={check.text} data-ok={check.ok || undefined}>
+              <span aria-hidden="true">{check.ok ? '✓' : '!'}</span>
+              {check.text}
+            </li>
+          ))}
+        </ul>
+        <p className="ready-list__note">
+          عند سماع موعدكم، افتحوا أعينكم ونفّذوا الإجراء بصمت.
+        </p>
+      </Panel>
+
+      <Button size="xl" onClick={onStart} disabled={!checks.every((check) => check.ok)}>
+        ابدأ الليل
+      </Button>
+    </>
+  );
+}
+
+/* ══════════════════════════ الليل ══════════════════════════ */
+
+export function HostNightStage({
+  phase,
+  countdown,
+  naming,
+  disconnected,
+  onPause,
+}: {
+  phase: Phase;
+  countdown: { value: number; total: number } | null;
+  naming: RoomSettings['slotNaming'];
+  disconnected: PlayerPublic[];
+  onPause: () => void;
+}) {
+  const slot = slotOfNightPhase(phase);
+  const sleepers = useMemo(() => ROSTER.slice(0, 5), []);
+
+  return (
+    <div className="night-stage">
+      <p className="night-stage__label">{slot ? 'مرحلة' : ''}</p>
+      <h1 className="night-stage__title">
+        {slot ? slotLabel(slot, naming) : 'بدأ الليل'}
+      </h1>
+
+      <div className="night-stage__sleepers" aria-hidden="true">
+        {sleepers.map((character, index) => (
+          <Character
+            key={character.id}
+            characterId={character.id}
+            state="asleep"
+            size={112}
+            style={{ animationDelay: `${index * 0.3}s` }}
+          />
+        ))}
+      </div>
+
+      {countdown ? (
+        <CountdownRing seconds={countdown.value} total={countdown.total} label="ثانية" />
+      ) : (
+        <div className="night-stage__dots">
+          <WaitingNote>الجميع يغلق عينيه</WaitingNote>
+        </div>
+      )}
+
+      <div className="night-stage__meter" aria-label="تقدّم الليل">
+        {[1, 2, 3, 4, 5, 6].map((value) => (
+          <span key={value} data-state={slot && value < slot ? 'past' : value === slot ? 'now' : 'next'} />
+        ))}
+      </div>
+
+      {disconnected.length > 0 && (
+        <Panel tone="coral" className="night-stage__alert">
+          <strong>انقطع {disconnected.length} جهاز.</strong> أوقف الجولة وانتظر عودتهم — لا
+          تُكمِل الليل بدونهم.
+          <Button tone="quiet" onClick={onPause}>
+            أوقف الجولة
+          </Button>
+        </Panel>
+      )}
+    </div>
+  );
+}
+
+/* ══════════════════════════ المرحلة السرية ══════════════════════════ */
+
+export function HostSecretStage({
+  players,
+  progress,
+  resolved,
+}: {
+  players: PlayerPublic[];
+  progress: Progress;
+  resolved: boolean;
+}) {
+  const done = doneCount(progress, players, 'secretAck');
+
+  return (
+    <>
+      <div className="secret-scene">
+        <FileProp state="taken" size={200} />
+      </div>
+      <StageTitle
+        kicker="انتهى الليل"
+        title={`${GAME_CONFIG.prop.nameWithArticle} اختفى!`}
+        note="كل لاعب ينظر إلى جهازه وحده الآن. من لديه معلومة سيراها."
+      />
+      <Panel className="host-progress">
+        {resolved ? (
+          <>
+            <p>
+              <strong>{done}</strong> من {players.length} أنهوا إجراءاتهم السرية
+            </p>
+            <ProgressPips done={done} total={players.length} />
+          </>
+        ) : (
+          <WaitingNote>تجري إجراءات سرية على أحد الأجهزة</WaitingNote>
+        )}
+      </Panel>
+    </>
+  );
+}
+
+/* ══════════════════════════ النقاش ══════════════════════════ */
+
+export function HostDiscussionStage({
+  players,
+  seconds,
+  onVote,
+}: {
+  players: PlayerPublic[];
+  seconds: number;
+  onVote: () => void;
+}) {
+  const [remaining, setRemaining] = useState(seconds);
+  const [running, setRunning] = useState(true);
+  const timerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!running) return;
+    timerRef.current = window.setInterval(() => {
+      setRemaining((value) => (value > 0 ? value - 1 : 0));
+    }, 1000);
+    return () => {
+      if (timerRef.current) window.clearInterval(timerRef.current);
+    };
+  }, [running]);
+
+  const minutes = Math.floor(remaining / 60);
+  const secs = remaining % 60;
+
+  return (
+    <>
+      <StageTitle
+        kicker="النقاش"
+        title="ناقشوا ما شاهدتموه"
+        note="يمكنكم قول الحقيقة أو محاولة تضليل الآخرين — لكن لا تعرضوا شاشاتكم السرية."
+      />
+
+      <SeatRing players={players} caption={`${minutes}:${String(secs).padStart(2, '0')}`} />
+
+      <div className="row">
+        <Button tone="quiet" onClick={() => setRunning((value) => !value)}>
+          {running ? 'إيقاف المؤقت' : 'استكمال المؤقت'}
+        </Button>
+        <Button size="lg" onClick={onVote}>
+          انتقلوا إلى التصويت
+        </Button>
+      </div>
+    </>
+  );
+}
+
+/* ══════════════════════════ التصويت ══════════════════════════ */
+
+export function HostVotingStage({
+  players,
+  progress,
+}: {
+  players: PlayerPublic[];
+  progress: Progress;
+}) {
+  const done = doneCount(progress, players, 'voted');
+
+  return (
+    <>
+      <StageTitle
+        kicker="التصويت"
+        title={`من تعتقدون أنه أخفى ${GAME_CONFIG.prop.nameWithArticle}؟`}
+        note="التصويت سري ومتزامن. لن تظهر أي نتيجة قبل وصول كل الأصوات."
+      />
+
+      <div className="vote-count">
+        <strong>{done}</strong>
+        <span>من {players.length} صوّتوا</span>
+      </div>
+      <ProgressPips done={done} total={players.length} />
+
+      <ul className="vote-names">
+        {players.map((player) => (
+          <li key={player.id} data-done={progress[player.id]?.voted || undefined}>
+            <Character
+              characterId={player.avatarId}
+              size={62}
+              still
+              state={progress[player.id]?.voted ? 'idle' : 'suspicious'}
+            />
+            <span>{player.name}</span>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+/* ══════════════════════════ الكشف ══════════════════════════ */
+
+export function HostRevealStage({
+  step,
+  results,
+  players,
+}: {
+  step: number | null;
+  results: RoundResults | null;
+  players: PlayerPublic[];
+}) {
+  const byId = useMemo(
+    () => Object.fromEntries(players.map((player) => [player.id, player])),
+    [players],
+  );
+
+  if (step === null || step > 0) {
+    return (
+      <div className="reveal-count">
+        <span key={step}>{step ?? 3}</span>
+      </div>
+    );
+  }
+
+  if (!results) return <WaitingNote>جارٍ حساب النتيجة</WaitingNote>;
+
+  const teamWon = results.winner === 'team';
+
+  return (
+    <div className="reveal">
+      <h1 className="reveal__headline">
+        {teamWon
+          ? `وجدتم ${GAME_CONFIG.roles.hider.label}!`
+          : `نجحت الخطة… ولم تعرفوا من أخفى ${GAME_CONFIG.prop.nameWithArticle}`}
+      </h1>
+
+      <div className="reveal__cast">
+        {results.tally.topVoted.map((playerId) => {
+          const player = byId[playerId];
+          const row = results.reveal.find((entry) => entry.playerId === playerId);
+          if (!player) return null;
+          const isHider = row?.role === 'hider';
+          return (
+            <div key={playerId} className="reveal__card" data-hider={isHider || undefined}>
+              <Character
+                characterId={player.avatarId}
+                state={isHider ? 'startled' : 'defeat'}
+                size={170}
+              />
+              <strong>{player.name}</strong>
+              <Badge tone={isHider ? 'warn' : 'neutral'}>
+                {row?.role === 'hider'
+                  ? GAME_CONFIG.roles.hider.label
+                  : row?.role === 'accomplice'
+                    ? GAME_CONFIG.roles.accomplice.label
+                    : GAME_CONFIG.roles.member.label}
+              </Badge>
+              <small>{results.tally.counts[playerId] ?? 0} أصوات</small>
+            </div>
+          );
+        })}
+      </div>
+
+      <FileProp state={teamWon ? 'returned' : 'taken'} size={150} />
+    </div>
+  );
+}
+
+/* ══════════════════════════ النتائج ══════════════════════════ */
+
+export function HostResultsStage({
+  results,
+  players,
+  naming,
+  onNewRound,
+  onHome,
+}: {
+  results: RoundResults | null;
+  players: PlayerPublic[];
+  naming: RoomSettings['slotNaming'];
+  onNewRound: () => void;
+  onHome: () => void;
+}) {
+  const byId = useMemo(
+    () => Object.fromEntries(players.map((player) => [player.id, player])),
+    [players],
+  );
+  const name = (id: string | null) => (id ? (byId[id]?.name ?? '—') : '—');
+
+  if (!results) return <WaitingNote>لا توجد نتيجة</WaitingNote>;
+
+  const teamWon = results.winner === 'team';
+
+  return (
+    <>
+      <StageTitle
+        kicker={teamWon ? 'فاز أعضاء الفريق' : 'فاز مُخفي الملف'}
+        title={teamWon ? `عاد ${GAME_CONFIG.prop.nameWithArticle}` : `${GAME_CONFIG.prop.nameWithArticle} لم يعد`}
+      />
+
+      <div className="results-cast">
+        {players.map((player) => {
+          const row = results.reveal.find((entry) => entry.playerId === player.id);
+          const role = row?.role ?? 'member';
+          const won = teamWon ? role === 'member' : role !== 'member';
+          return (
+            <div key={player.id} className="results-cast__item">
+              <Character
+                characterId={player.avatarId}
+                state={won ? 'victory' : 'defeat'}
+                size={110}
+              />
+              <strong>{player.name}</strong>
+              <Badge
+                tone={role === 'hider' ? 'warn' : role === 'accomplice' ? 'secret' : 'neutral'}
+              >
+                {role === 'hider'
+                  ? GAME_CONFIG.roles.hider.label
+                  : role === 'accomplice'
+                    ? GAME_CONFIG.roles.accomplice.label
+                    : GAME_CONFIG.roles.member.label}
+              </Badge>
+            </div>
+          );
+        })}
+      </div>
+
+      <Panel tone="paper" className="results-table-wrap">
+        <table className="results-table">
+          <thead>
+            <tr>
+              <th>اللاعب</th>
+              <th>الدور</th>
+              <th>موعده</th>
+              <th>استيقظ مع</th>
+              <th>فحص</th>
+              <th>صوّت لـ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {results.reveal.map((row) => (
+              <tr key={row.playerId}>
+                <td>{name(row.playerId)}</td>
+                <td>
+                  {row.role === 'hider'
+                    ? GAME_CONFIG.roles.hider.label
+                    : row.role === 'accomplice'
+                      ? GAME_CONFIG.roles.accomplice.label
+                      : GAME_CONFIG.roles.member.label}
+                </td>
+                <td>{row.effectiveSlots.map((slot) => slotLabel(slot, naming)).join(' + ')}</td>
+                <td>{row.wokeWith.length ? row.wokeWith.map(name).join('، ') : 'كان وحده'}</td>
+                <td>
+                  {row.inspected
+                    ? `${name(row.inspected.targetId)} → ${
+                        row.inspected.revealedSlot
+                          ? slotLabel(row.inspected.revealedSlot, naming)
+                          : '—'
+                      }`
+                    : '—'}
+                </td>
+                <td>
+                  {name(row.votedFor)}
+                  {row.votedFor && (
+                    <small> ({results.tally.counts[row.votedFor] ?? 0})</small>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Panel>
+
+      <div className="row">
+        <Button size="lg" onClick={onNewRound}>
+          جولة جديدة بنفس اللاعبين
+        </Button>
+        <Button tone="ghost" onClick={onHome}>
+          العودة للرئيسية
+        </Button>
+      </div>
+    </>
+  );
+}
+
+/** يُستخدم في شاشة النتائج للتحقق من صحة الجيران عند التدقيق اليدوي. */
+export function neighboursLabel(playerId: string, players: PlayerPublic[]): string {
+  try {
+    const { right, left } = neighboursOf(playerId, players);
+    const name = (id: string) => players.find((player) => player.id === id)?.name ?? '—';
+    return `يمينه ${name(right)} · يساره ${name(left)}`;
+  } catch {
+    return '';
+  }
+}

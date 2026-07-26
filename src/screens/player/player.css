@@ -1,0 +1,271 @@
+.screen--player {
+  max-width: 34rem;
+  margin-inline: auto;
+}
+
+.player-bar {
+  position: relative;
+  z-index: var(--z-sticky);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s-3);
+  padding-bottom: var(--s-3);
+}
+
+.player-bar__me {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.player-bar__me strong {
+  font-family: var(--font-display);
+}
+
+.player-body {
+  gap: var(--s-4);
+}
+
+.player-panel p {
+  margin: 0;
+}
+
+.player-panel p + p {
+  margin-top: var(--s-2);
+}
+
+/* ══════ الانضمام ══════ */
+
+.join {
+  gap: var(--s-3);
+  align-items: stretch;
+  text-align: center;
+}
+
+.join__code {
+  color: var(--text-muted);
+}
+
+.join__code strong {
+  color: var(--amber);
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  letter-spacing: 0.12em;
+}
+
+.join__preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.join__trait {
+  color: var(--sky);
+  font-weight: 700;
+  max-width: 26ch;
+}
+
+.join__label {
+  font-weight: 800;
+  font-family: var(--font-display);
+  text-align: start;
+}
+
+.join__name {
+  width: 100%;
+  padding: var(--s-3) var(--s-4);
+  font-size: 1.25rem;
+  font-weight: 700;
+  background: var(--night-deep);
+  border: var(--stroke) solid var(--ink);
+  border-radius: var(--r-md);
+  min-height: 3.25rem;
+}
+
+.join__name[aria-invalid] {
+  border-color: var(--coral);
+}
+
+.join__error {
+  color: var(--coral);
+  font-weight: 700;
+}
+
+.join__avatars {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  gap: var(--s-2);
+}
+
+.join__avatars button {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-1);
+  padding: var(--s-2);
+  border: 2px solid var(--night-edge);
+  border-radius: var(--r-md);
+  background: var(--night);
+  font-size: 0.85rem;
+  font-weight: 700;
+  min-height: 6rem;
+}
+
+.join__avatars button[data-selected] {
+  border-color: var(--sky);
+  background: var(--night-edge);
+  box-shadow: var(--shadow-sticker-sm);
+}
+
+/* ══════ الدور ══════ */
+
+.role-cover {
+  width: min(15rem, 55vw);
+  aspect-ratio: 3 / 4;
+  display: grid;
+  place-items: center;
+  background: var(--blue-deep);
+  border: var(--stroke-bold) solid var(--ink);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sticker);
+  rotate: -3deg;
+}
+
+.role-cover span {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 7vw, 2.4rem);
+  font-weight: 900;
+  color: var(--amber);
+  letter-spacing: 0.08em;
+}
+
+.role-cover--secret {
+  background: var(--violet);
+  rotate: 3deg;
+}
+
+.role-cover--empty {
+  background: var(--night-lift);
+}
+
+.role-cover--empty span {
+  color: var(--text-muted);
+}
+
+.role-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-3);
+  width: 100%;
+  animation: rise-in 380ms var(--ease-out-expo);
+}
+
+.role-card__name {
+  font-size: clamp(2rem, 9vw, 3.2rem);
+  color: var(--amber);
+  text-shadow: 3px 3px 0 var(--ink);
+}
+
+.role-card[data-role='member'] .role-card__name {
+  color: var(--sky);
+}
+
+.role-card__desc {
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+/* ══════ النرد ══════ */
+
+.dice-row {
+  display: flex;
+  gap: var(--s-4);
+  justify-content: center;
+}
+
+.dice-entry {
+  display: flex;
+  gap: var(--s-3);
+  justify-content: center;
+}
+
+.dice-entry input {
+  width: 4.5rem;
+  height: 5rem;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  font-weight: 900;
+  background: var(--night-deep);
+  border: var(--stroke) solid var(--ink);
+  border-radius: var(--r-md);
+  color: var(--amber);
+}
+
+.slot-headline {
+  font-size: clamp(2rem, 9vw, 3.2rem);
+  color: var(--amber);
+  text-shadow: 3px 3px 0 var(--ink);
+}
+
+/* ══════ الليل: أقل إضاءة ممكنة ══════ */
+
+.screen--blackout {
+  background: #04070f;
+  min-height: 100dvh;
+  padding: 0;
+}
+
+.screen--blackout .screen__body {
+  justify-content: center;
+}
+
+.night-blackout {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  width: 100%;
+  /* لا يستقبل أي لمسة — يمنع الضغط غير المقصود في الظلام */
+  pointer-events: none;
+  user-select: none;
+}
+
+.night-blackout__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: oklch(0.32 0.05 250);
+  animation: night-pulse 4s var(--ease-in-out) infinite;
+}
+
+@keyframes night-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* ══════ التصويت ══════ */
+
+.vote-locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .role-card,
+  .night-blackout__dot {
+    animation: none;
+  }
+}

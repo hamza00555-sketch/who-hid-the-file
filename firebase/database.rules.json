@@ -1,0 +1,84 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "rooms": {
+      "$code": {
+        "meta": {
+          ".read": "auth != null",
+          ".write": "auth != null && (!data.exists() || data.child('hostUid').val() === auth.uid)",
+          ".validate": "newData.hasChildren(['code', 'hostUid', 'phase', 'roundId'])"
+        },
+
+        "settings": {
+          ".read": "auth != null",
+          ".write": "auth != null && root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid"
+        },
+
+        "players": {
+          ".read": "auth != null",
+          "$uid": {
+            ".write": "auth != null && (auth.uid === $uid || root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid)",
+            ".validate": "newData.hasChildren(['id', 'name', 'avatarId', 'seat']) && newData.child('id').val() === $uid",
+            "seat": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 8"
+            },
+            "name": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 24"
+            },
+            "isHost": {
+              ".validate": "newData.val() === (root.child('rooms').child($code).child('meta').child('hostUid').val() === $uid)"
+            }
+          }
+        },
+
+        "round": {
+          "progress": {
+            ".read": "auth != null",
+            "$uid": {
+              ".write": "auth != null && (auth.uid === $uid || root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid)"
+            }
+          },
+
+          "_comment_secrets": "لاعب واحد = مسار واحد. لا يستطيع أي لاعب قراءة سر لاعب آخر. المضيف يقرأ الكل لأنه هو من يوزّع الأدوار ويحسب الانفراد والنتائج — وهذا القيد يزول بنقل التوزيع إلى Cloud Function.",
+          "secrets": {
+            ".read": "auth != null && root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid",
+            "$uid": {
+              ".read": "auth != null && (auth.uid === $uid || root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid)",
+              ".write": "auth != null && (auth.uid === $uid || root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid)",
+
+              "role": {
+                ".validate": "root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid || !data.exists() || newData.val() === data.val()"
+              },
+              "dice": {
+                ".validate": "root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid || root.child('rooms').child($code).child('round').child('progress').child($uid).child('diceAck').val() !== true"
+              },
+              "soloSlots": {
+                ".validate": "root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid || !data.exists() || newData.val() === data.val()"
+              },
+              "knownAllies": {
+                ".validate": "root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid || !data.exists()"
+              }
+            }
+          },
+
+          "_comment_votes": "قراءة الأصوات للمضيف فقط قبل الكشف. كل لاعب يكتب صوته مرة واحدة ولا يستطيع التصويت لنفسه.",
+          "votes": {
+            ".read": "auth != null && root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid",
+            "$uid": {
+              ".read": "auth != null && auth.uid === $uid",
+              ".write": "auth != null && auth.uid === $uid && !data.exists()",
+              ".validate": "newData.isString() && newData.val() !== $uid && root.child('rooms').child($code).child('players').child(newData.val()).exists()"
+            }
+          },
+
+          "results": {
+            ".read": "auth != null",
+            ".write": "auth != null && root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid"
+          }
+        }
+      }
+    }
+  }
+}

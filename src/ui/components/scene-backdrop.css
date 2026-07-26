@@ -1,0 +1,51 @@
+.scene-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-scene);
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.scene-backdrop__svg {
+  width: 100%;
+  height: 100%;
+  transition: opacity var(--dur-slow) var(--ease-in-out);
+}
+
+/*
+  حجاب خافت يفصل المحتوى عن المشهد: يرفع تباين النص فوق أي جزء من الخلفية
+  دون أن يطمس الرسم. يحل محل «البطاقة» التي كان النص سيحتاجها.
+*/
+.scene-backdrop__vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 42%, oklch(0.12 0.04 265 / 0.42), transparent 70%),
+    radial-gradient(ellipse at 50% 55%, transparent 45%, oklch(0.1 0.04 265 / 0.5) 100%);
+}
+
+.scene-backdrop__stars circle {
+  animation: twinkle 4.5s var(--ease-in-out) infinite;
+}
+
+.scene-backdrop[data-tone='deep-night'] .scene-backdrop__stars circle {
+  animation-duration: 7s;
+  opacity: 0.55;
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene-backdrop__stars circle {
+    animation: none;
+    opacity: 0.7;
+  }
+}

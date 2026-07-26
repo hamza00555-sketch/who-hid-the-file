@@ -1,0 +1,225 @@
+/* ── حلقة المقاعد ── */
+
+.seat-ring {
+  position: relative;
+  width: min(100%, 46rem);
+  aspect-ratio: 16 / 11;
+  margin-inline: auto;
+}
+
+.seat-ring__table {
+  position: absolute;
+  inset: 22% 16%;
+  border-radius: 50%;
+  background: oklch(0.28 0.055 55);
+  border: var(--stroke-bold) solid var(--ink);
+  box-shadow: inset 0 -10px 0 oklch(0.22 0.05 55);
+  display: grid;
+  place-items: center;
+}
+
+.seat-ring__caption {
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: var(--amber);
+  font-size: clamp(0.95rem, 2vw, 1.3rem);
+  text-align: center;
+  padding: var(--s-3);
+}
+
+.seat-ring__seat {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition:
+    filter var(--dur) var(--ease-out),
+    transform var(--dur) var(--ease-out);
+}
+
+.seat-ring__seat[data-dim] {
+  filter: grayscale(0.85) brightness(0.6);
+}
+
+.seat-ring__seat[data-highlight] {
+  filter: drop-shadow(0 0 14px var(--amber));
+  z-index: 2;
+}
+
+.seat-ring__name {
+  font-weight: 800;
+  font-size: 0.9rem;
+  background: var(--night-lift);
+  border: 2px solid var(--ink);
+  border-radius: var(--r-pill);
+  padding: 0.1em 0.7em;
+  white-space: nowrap;
+}
+
+.seat-ring__flag {
+  font-size: 0.72rem;
+  color: var(--coral);
+  font-weight: 700;
+}
+
+/* ── بطاقة لاعب ── */
+
+.player-card {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  width: 100%;
+  text-align: start;
+  background: var(--night-lift);
+  border: var(--stroke) solid var(--ink);
+  border-radius: var(--r-md);
+  padding: var(--s-2) var(--s-3);
+  box-shadow: var(--shadow-sticker-sm);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+
+button.player-card:hover:not(:disabled) {
+  transform: translate(-2px, -2px);
+  background: var(--night-edge);
+}
+
+button.player-card:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.player-card[data-selected] {
+  background: var(--blue-bright);
+  color: oklch(0.16 0.04 262);
+}
+
+.player-card[data-offline] {
+  opacity: 0.5;
+}
+
+.player-card:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.player-card__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  flex: 1;
+  min-width: 0;
+}
+
+.player-card__text strong {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-card__text small {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.player-card[data-selected] .player-card__text small {
+  color: oklch(0.28 0.05 262);
+}
+
+.player-card__tick {
+  font-size: 1.4rem;
+  font-weight: 900;
+}
+
+/* ── محرر الجلوس ── */
+
+.seating {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  width: 100%;
+}
+
+.seating__item {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  background: var(--night-lift);
+  border: var(--stroke) solid var(--ink);
+  border-radius: var(--r-md);
+  padding: var(--s-2) var(--s-3);
+  touch-action: none;
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+
+.seating__item[data-dragging] {
+  background: var(--blue-deep);
+  transform: scale(1.02);
+  box-shadow: var(--shadow-sticker);
+}
+
+.seating__item[data-over] {
+  outline: 3px dashed var(--sky);
+  outline-offset: 2px;
+}
+
+.seating__seat {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.1rem;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  background: var(--amber);
+  color: oklch(0.24 0.05 70);
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  flex: none;
+}
+
+.seating__name {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seating__spacer {
+  flex: 1;
+}
+
+.seating__move {
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: var(--r-sm);
+  border: 2px solid var(--ink);
+  background: var(--night);
+  font-size: 0.85rem;
+  flex: none;
+}
+
+.seating__move:disabled {
+  opacity: 0.3;
+}
+
+.seating__handle {
+  cursor: grab;
+  font-size: 1.4rem;
+  color: var(--text-muted);
+  padding: 0 var(--s-2);
+  flex: none;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  display: grid;
+  place-items: center;
+}

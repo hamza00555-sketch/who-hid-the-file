@@ -1,0 +1,300 @@
+/* ── الأزرار: ملصق بحافة حبر وظل حافّ يزاح عند الضغط ── */
+
+.btn {
+  --btn-bg: var(--blue);
+  --btn-fg: var(--paper);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  font-family: var(--font-display);
+  font-weight: 800;
+  border: var(--stroke) solid var(--ink);
+  border-radius: var(--r-pill);
+  box-shadow: var(--shadow-sticker);
+  padding: 0.7em 1.6em;
+  min-height: 3rem;
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    filter var(--dur-fast) var(--ease-out);
+}
+
+.btn--md {
+  font-size: 1.05rem;
+}
+.btn--lg {
+  font-size: 1.25rem;
+  min-height: 3.5rem;
+  padding: 0.75em 2em;
+}
+.btn--xl {
+  font-size: clamp(1.35rem, 3vw, 1.9rem);
+  min-height: 4.25rem;
+  padding: 0.7em 2.4em;
+  box-shadow: 7px 7px 0 var(--ink);
+}
+
+.btn--full {
+  width: 100%;
+}
+
+.btn--primary {
+  --btn-bg: var(--blue-bright);
+  --btn-fg: oklch(0.16 0.04 262);
+}
+.btn--danger {
+  --btn-bg: var(--coral);
+  --btn-fg: oklch(0.99 0.005 30);
+}
+.btn--ghost {
+  --btn-bg: transparent;
+  --btn-fg: var(--text);
+  border-color: var(--night-edge);
+  box-shadow: none;
+}
+.btn--quiet {
+  --btn-bg: var(--night-lift);
+  --btn-fg: var(--text);
+  box-shadow: var(--shadow-sticker-sm);
+}
+
+.btn:hover:not(:disabled) {
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0 var(--ink);
+}
+.btn--ghost:hover:not(:disabled) {
+  box-shadow: none;
+  filter: brightness(1.25);
+  transform: none;
+}
+
+.btn:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  box-shadow: var(--shadow-sticker-sm);
+}
+
+.btn__icon {
+  display: inline-flex;
+  font-size: 1.2em;
+  line-height: 1;
+}
+
+/* ── اللوحات ── */
+
+.panel {
+  --panel-bg: var(--night-lift);
+  --panel-fg: var(--text);
+  background: var(--panel-bg);
+  color: var(--panel-fg);
+  border: var(--stroke) solid var(--ink);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sticker);
+  padding: var(--s-5);
+  width: 100%;
+}
+
+.panel--paper {
+  --panel-bg: var(--paper);
+  --panel-fg: var(--text-on-light);
+}
+.panel--amber {
+  --panel-bg: var(--amber);
+  --panel-fg: oklch(0.24 0.05 70);
+}
+.panel--violet {
+  --panel-bg: var(--violet);
+  --panel-fg: oklch(0.99 0.005 300);
+}
+.panel--coral {
+  --panel-bg: var(--coral);
+  --panel-fg: oklch(0.99 0.005 30);
+}
+
+/* ── عنوان المرحلة ── */
+
+.stage-title {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  align-items: center;
+}
+
+.stage-title__kicker {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--sky);
+  font-size: 1rem;
+}
+
+/* ── فقاعة كلام ── */
+
+.bubble {
+  position: relative;
+  max-width: 34rem;
+}
+
+.bubble__body {
+  background: var(--paper);
+  color: var(--text-on-light);
+  border: var(--stroke) solid var(--ink);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sticker-sm);
+  padding: var(--s-4) var(--s-5);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -16px;
+  width: 0;
+  height: 0;
+  border: 12px solid transparent;
+  border-top-color: var(--ink);
+}
+.bubble--start::after {
+  inset-inline-start: 34px;
+}
+.bubble--end::after {
+  inset-inline-end: 34px;
+}
+
+/* ── الشارات ── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.3em 0.9em;
+  border-radius: var(--r-pill);
+  border: 2px solid var(--ink);
+  background: var(--night-lift);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.badge--live {
+  background: var(--mint);
+  color: oklch(0.22 0.05 165);
+}
+.badge--warn {
+  background: var(--amber);
+  color: oklch(0.24 0.05 70);
+}
+.badge--good {
+  background: var(--sky);
+  color: oklch(0.2 0.04 230);
+}
+.badge--secret {
+  background: var(--violet);
+  color: oklch(0.99 0.005 300);
+}
+
+/* ── العدّاد ── */
+
+.countdown {
+  position: relative;
+  width: min(15rem, 46vw);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+}
+
+.countdown__ring {
+  position: absolute;
+  inset: 0;
+}
+
+.countdown__value {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
+.countdown__value strong {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 12vw, 5rem);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.countdown__value span {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-top: var(--s-2);
+}
+
+/* ── نقاط التقدّم ── */
+
+.pips {
+  display: flex;
+  gap: var(--s-2);
+  justify-content: center;
+}
+
+.pips__dot {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--night-lift);
+  transition: background var(--dur) var(--ease-out);
+}
+
+.pips__dot.is-done {
+  background: var(--mint);
+}
+
+/* ── الانتظار ── */
+
+.waiting {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.waiting__dots {
+  display: inline-flex;
+  gap: 5px;
+}
+
+.waiting__dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--sky);
+  animation: waiting-pulse 1.2s var(--ease-in-out) infinite;
+}
+.waiting__dots i:nth-child(2) {
+  animation-delay: 0.16s;
+}
+.waiting__dots i:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+@keyframes waiting-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
