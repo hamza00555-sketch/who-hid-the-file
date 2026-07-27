@@ -227,7 +227,7 @@ rooms/{roomCode}/
     secretStage           ← choosing | resolved (داخل secret-actions)
   settings/
     gameName, diceMode, slotNaming, discussionSeconds,
-    nightCountdownSeconds, voiceEnabled, ttsRate, tableMode
+    nightCountdownSeconds, voiceEnabled, ttsRate
   players/{uid}/
     id, name, avatarId, seat, ready, connected, lastSeen, joinedAt, isHost
   round/                  ← الجولة الحالية فقط؛ `resetRound` يمسحها ويجدّد roundId

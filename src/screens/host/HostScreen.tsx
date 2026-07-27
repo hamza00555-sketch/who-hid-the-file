@@ -75,7 +75,6 @@ export function HostScreen() {
 
   const [countdown, setCountdown] = useState<{ value: number; total: number } | null>(null);
   const [revealStep, setRevealStep] = useState<number | null>(null);
-  const [tableMode, setTableMode] = useState(false);
 
   const phaseRef = useRef<Phase>(phase);
   phaseRef.current = phase;
@@ -329,10 +328,7 @@ export function HostScreen() {
   }
 
   return (
-    <div
-      className={`screen screen--host ${tableMode ? 'screen--table' : ''}`}
-      data-phase={phase}
-    >
+    <div className="screen screen--host" data-phase={phase}>
       <SceneBackdrop tone={SCENE_TONE[phase] ?? 'night'} table={!isNight} />
 
       <header className="host-bar">
@@ -345,17 +341,11 @@ export function HostScreen() {
             <Badge tone="warn">{disconnected.length} جهاز منقطع</Badge>
           )}
         </div>
-        <div className="host-bar__group">
-          {!narrator.ttsAvailable && <Badge tone="warn">لا يوجد محرك نطق</Badge>}
-          <Button
-            tone="ghost"
-            size="md"
-            onClick={() => setTableMode((value) => !value)}
-            aria-pressed={tableMode}
-          >
-            {tableMode ? 'وضع عادي' : 'وضع الطاولة'}
-          </Button>
-        </div>
+        {!narrator.ttsAvailable && (
+          <div className="host-bar__group">
+            <Badge tone="warn">لا يوجد محرك نطق</Badge>
+          </div>
+        )}
       </header>
 
       <main className="screen__body host-body">

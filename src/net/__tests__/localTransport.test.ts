@@ -19,7 +19,6 @@ const SETTINGS: RoomSettings = {
   discussionSeconds: 180,
   voiceEnabled: true,
   ttsRate: 0.82,
-  tableMode: false,
 };
 
 /** `watchRoom` يستدعي المستمع فورًا، فلا يمكن الاعتماد على `stop` داخل الاستدعاء الأول. */

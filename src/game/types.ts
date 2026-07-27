@@ -121,7 +121,6 @@ export interface RoomSettings {
   discussionSeconds: number;
   voiceEnabled: boolean;
   ttsRate: number;
-  tableMode: boolean;
 }
 
 export interface RoomMeta {

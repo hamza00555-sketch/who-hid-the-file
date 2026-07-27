@@ -24,7 +24,6 @@ const DEFAULT_SETTINGS: RoomSettings = {
   discussionSeconds: GAME_CONFIG.defaults.discussionSeconds,
   voiceEnabled: GAME_CONFIG.defaults.voiceEnabled,
   ttsRate: GAME_CONFIG.defaults.ttsRate,
-  tableMode: GAME_CONFIG.defaults.tableMode,
 };
 
 export function Home() {

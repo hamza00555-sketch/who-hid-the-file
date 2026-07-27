@@ -48,7 +48,6 @@ export const GAME_CONFIG = {
     discussionSeconds: 180,
     voiceEnabled: true,
     ttsRate: 0.82,
-    tableMode: false,
   },
 
   /** رمز الجلسة: حروف واضحة بلا التباس بصري */

@@ -22,14 +22,6 @@
   gap: var(--s-5);
 }
 
-/* وضع الطاولة: عناصر أقل وأكبر */
-.screen--table .host-bar__group:first-child {
-  display: none;
-}
-.screen--table .host-body {
-  transform: scale(1.08);
-}
-
 /* ══════ الردهة ══════ */
 
 /*
