@@ -74,6 +74,10 @@
   font-weight: 700;
   margin-top: var(--s-2);
   max-width: none;
+  /* يجلس فوق نافذة مضيئة في المشهد — يحتاج حدًّا داكنًا ليُقرأ */
+  text-shadow:
+    0 2px 0 var(--ink),
+    0 0 14px oklch(0.1 0.04 265 / 0.9);
 }
 
 .home__actions {

@@ -18,7 +18,7 @@ import {
   update,
 } from 'firebase/database';
 import { GAME_CONFIG } from '../config/game.config';
-import { EMPTY_PROGRESS } from '../game/types';
+import { EMPTY_PROGRESS, newRoundId } from '../game/types';
 import type {
   Phase,
   PlayerPublic,
@@ -58,14 +58,13 @@ export class FirebaseTransport implements RoomTransport {
       code = generateCode();
     }
 
-    const now = Date.now();
     await set(ref(db(), room(code)), {
       meta: {
         code,
         hostUid: hostId,
         phase: 'lobby',
         resumePhase: null,
-        roundId: `r${now}`,
+        roundId: newRoundId(),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         status: 'open',
@@ -281,7 +280,7 @@ export class FirebaseTransport implements RoomTransport {
     await set(ref(db(), `${room(code)}/round/progress`), progress);
     await update(ref(db(), `${room(code)}/players`), readyUpdates);
     await update(ref(db(), `${room(code)}/meta`), {
-      roundId: `r${Date.now()}`,
+      roundId: newRoundId(),
       phase: 'lobby',
       resumePhase: null,
       updatedAt: serverTimestamp(),

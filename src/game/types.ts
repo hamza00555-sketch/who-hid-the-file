@@ -175,6 +175,17 @@ export interface RoomState {
   votesSubmitted: number;
 }
 
+/**
+ * معرّف جولة فريد.
+ *
+ * لا يكفي `Date.now()` وحده: جولة جديدة تبدأ في نفس المللي ثانية تُنتج نفس
+ * المعرّف، والمضيف يستخدم `roundId` مفتاحًا لحارس «مرة واحدة لكل جولة» —
+ * فتكراره يمنع الجولة الجديدة من التقدّم.
+ */
+export function newRoundId(): string {
+  return `r${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 export const EMPTY_PROGRESS: PlayerProgress = {
   roleAck: false,
   diceAck: false,

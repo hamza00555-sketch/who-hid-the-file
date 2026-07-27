@@ -4,12 +4,21 @@
   z-index: var(--z-scene);
   pointer-events: none;
   overflow: hidden;
+  background: var(--night-deep);
 }
 
-.scene-backdrop__svg {
+.scene-backdrop__image {
   width: 100%;
   height: 100%;
-  transition: opacity var(--dur-slow) var(--ease-in-out);
+  object-fit: cover;
+  /* مركز الصورة هو الطاولة؛ ترسيتها للأسفل تُبقي الطاولة في المقدمة */
+  object-position: 50% 68%;
+  animation: scene-in var(--dur-slow) var(--ease-out);
+}
+
+/* على شاشات اللاعب الضيقة تُرفع الطاولة خارج الكادر فتبقى الخلفية هادئة */
+.scene-backdrop[data-table='false'] .scene-backdrop__image {
+  object-position: 50% 34%;
 }
 
 /*
@@ -19,33 +28,38 @@
 .scene-backdrop__vignette {
   position: absolute;
   inset: 0;
+  /*
+    المشهد المرسوم غنيّ بالتفاصيل، والنص يجلس فوقه مباشرة بلا بطاقة.
+    ثلاث طبقات: تعتيم عام يهدّئ المشهد، بقعة أغمق تحت منطقة المحتوى،
+    وحوافّ داكنة تمنع تسرّب الانتباه إلى الأطراف.
+  */
   background:
-    radial-gradient(ellipse 70% 55% at 50% 42%, oklch(0.12 0.04 265 / 0.42), transparent 70%),
-    radial-gradient(ellipse at 50% 55%, transparent 45%, oklch(0.1 0.04 265 / 0.5) 100%);
+    linear-gradient(oklch(0.12 0.04 265 / 0.36), oklch(0.12 0.04 265 / 0.36)),
+    radial-gradient(ellipse 82% 66% at 50% 44%, oklch(0.11 0.04 265 / 0.55), transparent 74%),
+    radial-gradient(ellipse at 50% 52%, transparent 38%, oklch(0.08 0.03 265 / 0.7) 100%);
 }
 
-.scene-backdrop__stars circle {
-  animation: twinkle 4.5s var(--ease-in-out) infinite;
+/* الليل العميق: طبقة إضافية تُطفئ المشهد بلا أن تُخفيه */
+.scene-backdrop[data-tone='deep-night'] .scene-backdrop__vignette {
+  background:
+    linear-gradient(oklch(0.09 0.03 265 / 0.68), oklch(0.09 0.03 265 / 0.68)),
+    radial-gradient(ellipse 78% 60% at 50% 42%, oklch(0.08 0.03 265 / 0.6), transparent 72%),
+    radial-gradient(ellipse at 50% 55%, oklch(0.07 0.025 265 / 0.4) 30%, oklch(0.05 0.02 265 / 0.85) 100%);
 }
 
-.scene-backdrop[data-tone='deep-night'] .scene-backdrop__stars circle {
-  animation-duration: 7s;
-  opacity: 0.55;
-}
-
-@keyframes twinkle {
-  0%,
-  100% {
-    opacity: 0.35;
+@keyframes scene-in {
+  from {
+    opacity: 0;
+    transform: scale(1.03);
   }
-  50% {
+  to {
     opacity: 1;
+    transform: none;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scene-backdrop__stars circle {
+  .scene-backdrop__image {
     animation: none;
-    opacity: 0.7;
   }
 }

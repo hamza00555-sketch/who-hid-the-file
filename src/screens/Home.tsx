@@ -11,7 +11,8 @@ import { useSession, rememberSession, recallSession, forgetSession } from '../ne
 import { isFirebaseConfigured } from '../net/env';
 import { Character } from '../ui/components/Character';
 import { FileProp } from '../ui/components/FileProp';
-import { SceneBackdrop } from '../ui/components/SceneBackdrop';
+import { SceneBackdrop, preloadScenes } from '../ui/components/SceneBackdrop';
+import { preloadDice } from '../ui/components/Dice';
 import { Badge, Button, Panel } from '../ui/components/kit';
 import './home.css';
 
@@ -37,6 +38,9 @@ export function Home() {
 
   useEffect(() => {
     document.body.dataset.night = 'false';
+    // مشاهد الجولة ووجوه النرد تُحمَّل مبكرًا فلا تومض عند تغيّر المرحلة
+    preloadScenes();
+    preloadDice();
   }, []);
 
   async function createRoom() {

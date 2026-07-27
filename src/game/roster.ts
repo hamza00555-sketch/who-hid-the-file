@@ -1,11 +1,14 @@
 /**
  * طاقم الشخصيات.
  *
- * الشخصيات تُرسم إجرائيًا من هذه المعطيات في `src/ui/components/Character.tsx`،
- * فإضافة شخصية جديدة = إضافة سطر هنا فقط. لا حاجة لملف صورة.
+ * كل شخصية لها مجلد أصول في `public/characters/{id}/` يحوي الحالات التسع
+ * بخلفية شفافة. الأصول مولّدة عبر GPT Image من الموجّهات في `scripts/art-spec.mjs`.
  *
- * لاستبدال الرسم الإجرائي بأصول مرسومة يدويًا لاحقًا: املأ `artSrc` بمسار الصورة
- * وسيستخدمها المكوّن بدل الرسم الإجرائي.
+ * إضافة شخصية: سطر هنا + مجلد أصول بنفس المعرّف. أعد التوليد بـ:
+ *   node scripts/slice-sheet.mjs <sheet.png> <id>
+ *
+ * الصفات الوصفية (البشرة، الملابس، الشعر…) هي **مصدر الموجّه** لا مصدر الرسم:
+ * تُقرأ من `scripts/art-spec.mjs` عند إعادة التوليد، وتبقى هنا للتوثيق والبحث.
  */
 
 export type Headwear = 'shemagh-red' | 'shemagh-white' | 'ghutra' | 'hijab' | 'tarha' | 'none';
@@ -54,8 +57,8 @@ export interface CharacterDef {
   facialHair: FacialHair;
   accessory: Accessory;
   build: Build;
-  /** مسار صورة بديلة إن توفّرت أصول مرسومة لاحقًا */
-  artSrc?: string;
+  /** مجلد أصول الشخصية — يُقرأ منه `{art}/{state}.png` */
+  art: string;
 }
 
 export const ROSTER: readonly CharacterDef[] = [
@@ -73,6 +76,7 @@ export const ROSTER: readonly CharacterDef[] = [
     facialHair: 'beard',
     accessory: 'none',
     build: 'regular',
+    art: '/characters/faisal',
   },
   {
     id: 'noura',
@@ -88,6 +92,7 @@ export const ROSTER: readonly CharacterDef[] = [
     facialHair: 'none',
     accessory: 'glasses',
     build: 'slim',
+    art: '/characters/noura',
   },
   {
     id: 'majed',
@@ -103,6 +108,7 @@ export const ROSTER: readonly CharacterDef[] = [
     facialHair: 'stubble',
     accessory: 'lanyard',
     build: 'broad',
+    art: '/characters/majed',
   },
   {
     id: 'lama',
@@ -118,6 +124,7 @@ export const ROSTER: readonly CharacterDef[] = [
     facialHair: 'none',
     accessory: 'earring',
     build: 'regular',
+    art: '/characters/lama',
   },
   {
     id: 'saud',
@@ -133,6 +140,7 @@ export const ROSTER: readonly CharacterDef[] = [
     facialHair: 'moustache',
     accessory: 'none',
     build: 'slim',
+    art: '/characters/saud',
   },
   {
     id: 'reem',
@@ -148,6 +156,7 @@ export const ROSTER: readonly CharacterDef[] = [
     facialHair: 'none',
     accessory: 'none',
     build: 'regular',
+    art: '/characters/reem',
   },
   {
     id: 'tariq',
@@ -163,6 +172,7 @@ export const ROSTER: readonly CharacterDef[] = [
     facialHair: 'stubble',
     accessory: 'headphones',
     build: 'slim',
+    art: '/characters/tariq',
   },
   {
     id: 'hessa',
@@ -178,6 +188,7 @@ export const ROSTER: readonly CharacterDef[] = [
     facialHair: 'none',
     accessory: 'glasses',
     build: 'broad',
+    art: '/characters/hessa',
   },
   {
     id: 'bandar',
@@ -193,6 +204,7 @@ export const ROSTER: readonly CharacterDef[] = [
     facialHair: 'beard',
     accessory: 'none',
     build: 'broad',
+    art: '/characters/bandar',
   },
   {
     id: 'jood',
@@ -208,6 +220,7 @@ export const ROSTER: readonly CharacterDef[] = [
     facialHair: 'none',
     accessory: 'cap',
     build: 'slim',
+    art: '/characters/jood',
   },
 ];
 

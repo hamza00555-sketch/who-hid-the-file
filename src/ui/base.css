@@ -159,6 +159,17 @@ p {
   font-size: 0.95rem;
 }
 
+/*
+  النصوص تجلس فوق مشهد مرسوم بلا بطاقة خلفها، فتحتاج حدًّا داكنًا خفيفًا
+  يضمن القراءة فوق أي جزء من الخلفية دون أن يبدو النص محاطًا بإطار.
+*/
+.screen__body h1,
+.screen__body h2,
+.lede,
+.stage-title__kicker {
+  text-shadow: 0 1px 10px oklch(0.1 0.04 265 / 0.85);
+}
+
 .lede {
   font-size: clamp(1.05rem, 2.6vw, 1.35rem);
   color: var(--text-muted);

@@ -10,7 +10,7 @@
  */
 
 import { GAME_CONFIG } from '../config/game.config';
-import { EMPTY_PROGRESS } from '../game/types';
+import { EMPTY_PROGRESS, newRoundId } from '../game/types';
 import type {
   Phase,
   PlayerPublic,
@@ -136,7 +136,7 @@ export class LocalTransport implements RoomTransport {
         hostUid: hostId,
         phase: 'lobby',
         resumePhase: null,
-        roundId: `r${now}`,
+        roundId: newRoundId(),
         createdAt: now,
         updatedAt: now,
         status: 'open',
@@ -324,7 +324,7 @@ export class LocalTransport implements RoomTransport {
 
   async resetRound(code: string): Promise<void> {
     this.mutate(code, (doc) => {
-      doc.meta.roundId = `r${Date.now()}`;
+      doc.meta.roundId = newRoundId();
       doc.meta.phase = 'lobby';
       doc.meta.resumePhase = null;
       doc.secrets = {};

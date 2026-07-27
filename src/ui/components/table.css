@@ -7,13 +7,16 @@
   margin-inline: auto;
 }
 
+/*
+  المشهد الخلفي يرسم الطاولة الحقيقية أصلًا، فهذه الحلقة **مخطّط** للجلوس
+  لا طاولة ثانية: قرص شفاف بحافة متقطّعة يوضح المحيط بلا أن ينافس الرسم.
+*/
 .seat-ring__table {
   position: absolute;
   inset: 22% 16%;
   border-radius: 50%;
-  background: oklch(0.28 0.055 55);
-  border: var(--stroke-bold) solid var(--ink);
-  box-shadow: inset 0 -10px 0 oklch(0.22 0.05 55);
+  background: oklch(0.14 0.04 262 / 0.55);
+  border: 3px dashed oklch(0.55 0.06 250 / 0.55);
   display: grid;
   place-items: center;
 }

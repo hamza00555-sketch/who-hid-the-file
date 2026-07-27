@@ -1,32 +1,61 @@
 .file-prop {
-  overflow: visible;
+  position: relative;
+  display: inline-block;
   filter: drop-shadow(0 14px 24px oklch(0.12 0.05 265 / 0.6));
 }
 
-.file-prop--breathing .file-prop__stack {
+.file-prop img {
+  display: block;
+}
+
+.file-prop--breathing img {
   animation: breathe 3s var(--ease-in-out) infinite;
-  transform-origin: 100px 140px;
+  transform-origin: 50% 100%;
 }
 
-.file-prop--taken .file-prop__puff {
+.file-prop--taken img {
   animation: puff-drift 5s var(--ease-in-out) infinite;
-  transform-origin: 100px 92px;
+  transform-origin: 50% 70%;
 }
 
-.file-prop--taken .file-prop__mark {
-  animation: mark-pop 2.4s var(--ease-out) infinite;
-  transform-origin: 100px 84px;
+.file-prop--returned img {
+  animation: prop-return 700ms var(--ease-out-expo);
 }
 
-.file-prop--returned .file-prop__sparks {
+.file-prop__sparks {
+  position: absolute;
+  inset: -12% -18%;
+}
+
+.file-prop__sparks i {
+  position: absolute;
+  width: 12%;
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--sky);
   animation: spark 900ms var(--ease-out) 2;
+}
+.file-prop__sparks i:nth-child(1) {
+  top: 12%;
+  inset-inline-start: 0;
+  rotate: -35deg;
+}
+.file-prop__sparks i:nth-child(2) {
+  top: 4%;
+  inset-inline-start: 46%;
+  rotate: 90deg;
+}
+.file-prop__sparks i:nth-child(3) {
+  top: 12%;
+  inset-inline-end: 0;
+  rotate: 35deg;
 }
 
 @keyframes puff-drift {
   0%,
   100% {
     transform: scale(1) translateY(0);
-    opacity: 0.9;
+    opacity: 0.92;
   }
   50% {
     transform: scale(1.04) translateY(-3px);
@@ -34,21 +63,21 @@
   }
 }
 
-@keyframes mark-pop {
-  0%,
-  70%,
-  100% {
-    transform: scale(1) rotate(-3deg);
+@keyframes prop-return {
+  from {
+    opacity: 0;
+    transform: scale(0.5) translateY(-24px);
   }
-  80% {
-    transform: scale(1.12) rotate(3deg);
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
 @keyframes spark {
   from {
     opacity: 0;
-    transform: scale(0.6);
+    transform: scale(0.4);
   }
   to {
     opacity: 1;
@@ -57,7 +86,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .file-prop * {
+  .file-prop img,
+  .file-prop__sparks i {
     animation: none !important;
   }
 }

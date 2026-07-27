@@ -1,49 +1,17 @@
 /**
- * النرد الرقمي — مكعب كرتوني يرتد ويدور ثم يستقر على النتيجة.
+ * النرد الرقمي — يعرض وجه النتيجة، ويقلّب الوجوه أثناء الدوران.
+ * الأصول: `public/props/dice/{1..6}.png`.
  */
 
 import { useEffect, useState } from 'react';
 import type { WakeSlot } from '../../game/types';
 import './dice.css';
 
-const PIPS: Record<number, Array<[number, number]>> = {
-  1: [[50, 50]],
-  2: [
-    [30, 30],
-    [70, 70],
-  ],
-  3: [
-    [28, 28],
-    [50, 50],
-    [72, 72],
-  ],
-  4: [
-    [30, 30],
-    [70, 30],
-    [30, 70],
-    [70, 70],
-  ],
-  5: [
-    [30, 30],
-    [70, 30],
-    [50, 50],
-    [30, 70],
-    [70, 70],
-  ],
-  6: [
-    [30, 26],
-    [70, 26],
-    [30, 50],
-    [70, 50],
-    [30, 74],
-    [70, 74],
-  ],
-};
-
 interface Props {
   value: WakeSlot | null;
   rolling?: boolean;
   size?: number;
+  /** `sky` يلوّن النرد الثاني في وضع الأربعة لاعبين ليتميّز عن الأول */
   tone?: 'amber' | 'sky';
 }
 
@@ -62,29 +30,22 @@ export function Dice({ value, rolling = false, size = 120, tone = 'amber' }: Pro
   }, [rolling, value]);
 
   return (
-    <svg
-      viewBox="0 0 100 100"
-      width={size}
-      height={size}
-      role="img"
-      aria-label={rolling ? 'النرد يدور' : `النرد يُظهر ${face}`}
+    <span
       className={`dice ${rolling ? 'dice--rolling' : 'dice--settled'}`}
       data-tone={tone}
+      style={{ width: size, height: size }}
+      role="img"
+      aria-label={rolling ? 'النرد يدور' : `النرد يُظهر ${face}`}
     >
-      <rect
-        x="6"
-        y="6"
-        width="88"
-        height="88"
-        rx="20"
-        fill="var(--dice-face)"
-        stroke="var(--ink)"
-        strokeWidth="5"
-      />
-      <path d="M 60 10 L 90 10 Q 94 10 94 16 L 94 46 Z" fill="var(--ink)" opacity="0.1" />
-      {(PIPS[face] ?? []).map(([cx, cy], index) => (
-        <circle key={index} cx={cx} cy={cy} r="8" fill="var(--ink)" />
-      ))}
-    </svg>
+      <img src={`/props/dice/${face}.png`} alt="" width={size} height={size} decoding="async" />
+    </span>
   );
+}
+
+/** يُحمّل وجوه النرد مسبقًا حتى لا يومض التقليب أثناء الدوران. */
+export function preloadDice() {
+  for (let face = 1; face <= 6; face++) {
+    const image = new Image();
+    image.src = `/props/dice/${face}.png`;
+  }
 }
