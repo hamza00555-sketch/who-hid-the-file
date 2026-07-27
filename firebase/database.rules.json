@@ -40,8 +40,6 @@
               ".write": "auth != null && (auth.uid === $uid || root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid)"
             }
           },
-
-          "_comment_secrets": "لاعب واحد = مسار واحد. لا يستطيع أي لاعب قراءة سر لاعب آخر. المضيف يقرأ الكل لأنه هو من يوزّع الأدوار ويحسب الانفراد والنتائج — وهذا القيد يزول بنقل التوزيع إلى Cloud Function.",
           "secrets": {
             ".read": "auth != null && root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid",
             "$uid": {
@@ -62,8 +60,6 @@
               }
             }
           },
-
-          "_comment_votes": "قراءة الأصوات للمضيف فقط قبل الكشف. كل لاعب يكتب صوته مرة واحدة ولا يستطيع التصويت لنفسه.",
           "votes": {
             ".read": "auth != null && root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid",
             "$uid": {
