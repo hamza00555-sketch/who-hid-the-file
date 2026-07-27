@@ -36,12 +36,14 @@
         "round": {
           "progress": {
             ".read": "auth != null",
+            ".write": "auth != null && root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid",
             "$uid": {
               ".write": "auth != null && (auth.uid === $uid || root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid)"
             }
           },
           "secrets": {
             ".read": "auth != null && root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid",
+            ".write": "auth != null && root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid",
             "$uid": {
               ".read": "auth != null && (auth.uid === $uid || root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid)",
               ".write": "auth != null && (auth.uid === $uid || root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid)",
@@ -62,6 +64,7 @@
           },
           "votes": {
             ".read": "auth != null && root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid",
+            ".write": "auth != null && root.child('rooms').child($code).child('meta').child('hostUid').val() === auth.uid && !newData.exists()",
             "$uid": {
               ".read": "auth != null && auth.uid === $uid",
               ".write": "auth != null && auth.uid === $uid && !data.exists()",

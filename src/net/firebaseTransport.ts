@@ -58,21 +58,22 @@ export class FirebaseTransport implements RoomTransport {
       code = generateCode();
     }
 
-    await set(ref(db(), room(code)), {
-      meta: {
-        code,
-        hostUid: hostId,
-        phase: 'lobby',
-        resumePhase: null,
-        roundId: newRoundId(),
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        status: 'open',
-      },
-      settings,
-      players: {},
-      round: { progress: {}, secrets: {}, votes: {}, results: null },
+    /*
+      كتابة `rooms/$code` كاملةً مرفوضة: لا توجد قاعدة `.write` عند جذر الغرفة،
+      والقواعد لا تتوارث صعودًا. `meta` أولًا لأنها تُثبّت `hostUid`، وقاعدة
+      `settings` تتحقّق منه. الفروع الفارغة لا تُكتب أصلًا — قيمها null في RTDB.
+    */
+    await set(ref(db(), `${room(code)}/meta`), {
+      code,
+      hostUid: hostId,
+      phase: 'lobby',
+      resumePhase: null,
+      roundId: newRoundId(),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      status: 'open',
     });
+    await set(ref(db(), `${room(code)}/settings`), settings);
     return code;
   }
 
@@ -270,7 +271,17 @@ export class FirebaseTransport implements RoomTransport {
     const playersSnapshot = await get(ref(db(), `${room(code)}/players`));
     const players = (playersSnapshot.val() ?? {}) as Record<string, PlayerPublic>;
 
-    await remove(ref(db(), `${room(code)}/round`));
+    /*
+      لا قاعدة `.write` على `round` نفسه — يُمسح كل فرع على حدة. المضيف مسموح
+      له بمسح الأصوات دون كتابتها: قاعدة `votes` تشترط `!newData.exists()`،
+      فيستطيع تصفيرها لجولة جديدة ولا يستطيع تزوير صوت.
+    */
+    await Promise.all([
+      remove(ref(db(), `${room(code)}/round/secrets`)),
+      remove(ref(db(), `${room(code)}/round/votes`)),
+      remove(ref(db(), `${room(code)}/round/results`)),
+      remove(ref(db(), `${room(code)}/round/progress`)),
+    ]);
     const progress: Record<string, typeof EMPTY_PROGRESS> = {};
     const readyUpdates: Record<string, boolean> = {};
     for (const playerId of Object.keys(players)) {
