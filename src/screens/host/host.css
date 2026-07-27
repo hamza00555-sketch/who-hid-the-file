@@ -115,16 +115,19 @@
 .join-panel {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--s-5);
+  grid-template-areas: 'qr text' 'hint hint';
+  gap: var(--s-4) var(--s-5);
   align-items: center;
 }
 
-@media (max-width: 560px) {
-  .join-panel {
-    grid-template-columns: 1fr;
-    justify-items: center;
-    text-align: center;
-  }
+.join-panel__qr {
+  grid-area: qr;
+}
+.join-panel__text {
+  grid-area: text;
+}
+.join-panel__hint {
+  grid-area: hint;
 }
 
 .join-panel__qr img {
@@ -159,9 +162,15 @@
 }
 
 .join-panel__hint {
-  margin-top: var(--s-3);
+  margin: 0;
   color: var(--text-on-light);
   font-size: 0.95rem;
+  padding-top: var(--s-3);
+  border-top: 2px solid oklch(0.88 0.02 250);
+}
+
+.lobby__ring {
+  width: 100%;
 }
 
 .settings-panel {
@@ -269,20 +278,20 @@
 }
 
 .lobby__count {
-  display: flex;
-  align-items: baseline;
-  gap: var(--s-2);
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-muted);
 }
 
 .lobby__count strong {
-  font-family: var(--font-display);
-  font-size: 3rem;
+  font-size: 1.9rem;
   font-weight: 900;
-  line-height: 1;
-}
-
-.lobby__count span {
-  color: var(--text-muted);
+  color: var(--text);
+  /* الرقم يجلس على نفس خط الأساس مع كلماته بدل أن يطفو فوقها */
+  vertical-align: -0.08em;
+  margin-inline: 0.1em;
 }
 
 .lobby__roster {
@@ -301,9 +310,22 @@
   background: var(--night-lift);
   border: 2px solid var(--night-edge);
   border-radius: var(--r-pill);
-  padding: 0.25em 0.9em;
+  padding: 0.25em 0.75em 0.25em 0.5em;
   font-weight: 700;
   font-size: 0.95rem;
+}
+
+/* رقم المقعد: يحفظ معلومة الترتيب حين تختفي حلقة الطاولة على الجوال */
+.lobby__roster li b {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--night-deep);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 900;
 }
 
 .lobby__roster li span {
@@ -344,6 +366,156 @@
   margin: 0;
   color: var(--mint);
   font-weight: 700;
+}
+
+/* ══════ الردهة على الجوال ══════
+   المضيف على جواله حالة واقعية جدًا، وتكديس تخطيط سطح المكتب رأسيًا لا يكفي:
+   ينتج شاشة مزدحمة بستة أسطح متنافسة. هنا ترتيب معلومات مختلف تمامًا. */
+
+@media (max-width: 760px) {
+  .host-bar {
+    padding-bottom: var(--s-2);
+  }
+
+  /* المحتوى يبدأ من الأعلى: التوسيط الرأسي على شاشة طويلة يترك فجوات معلّقة */
+  .screen--host .screen__body {
+    justify-content: flex-start;
+  }
+
+  .lobby {
+    gap: var(--s-3);
+    /* مساحة تحت المحتوى بقدر الشريط الثابت، وإلا اختفت آخر الأسماء خلفه */
+    padding-bottom: 7.5rem;
+  }
+
+  /* شرطة البادئة تصلح لقائمة محاذاة للبداية، لا لسطر متوسّط */
+  .lobby__blockers li::before {
+    content: none;
+  }
+
+  /* التبويبات شريط مقسّم واحد بدل ثلاث حبّات متفرقة */
+  .lobby__tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    background: var(--night);
+    border: 2px solid var(--ink);
+    border-radius: var(--r-pill);
+    padding: 3px;
+  }
+
+  .lobby__tab {
+    border: none;
+    background: transparent;
+    font-size: 0.92rem;
+    padding-inline: 0;
+    min-height: 2.75rem;
+  }
+
+  .lobby__tab[aria-selected='true'] {
+    border-radius: var(--r-pill);
+  }
+
+  /* الرمز هو البطل على الجوال، والـ QR مرافق له لا العكس */
+  .join-panel {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--s-3);
+    padding: var(--s-3);
+  }
+
+  .join-panel__qr img {
+    width: 6.5rem;
+  }
+
+  .join-panel__code {
+    font-size: clamp(2.6rem, 13vw, 3.4rem);
+    margin: 0.1em 0 0;
+  }
+
+  .join-panel__label {
+    font-size: 0.85rem;
+  }
+
+  /* الرابط الطويل بلا قيمة على الجوال — الرمز والـ QR يكفيان */
+  .join-panel__url {
+    display: none;
+  }
+
+  .join-panel__hint {
+    font-size: 0.88rem;
+    padding-top: var(--s-2);
+  }
+
+  /* حلقة الطاولة تمثيل مكاني يُقرأ من فوق الطاولة، لا على شاشة 430px */
+  .lobby__ring {
+    display: none;
+  }
+
+  .lobby__side {
+    align-items: stretch;
+    gap: var(--s-2);
+  }
+
+  .lobby__count {
+    text-align: center;
+  }
+
+  .lobby__roster {
+    justify-content: center;
+  }
+
+  /* الشريط مثبّت فعلًا بأسفل الشاشة، لا يعوم فوق المحتوى */
+  .lobby__bar {
+    position: fixed;
+    inset-inline: var(--s-4);
+    bottom: max(var(--s-3), env(safe-area-inset-bottom));
+    margin: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--s-2);
+    text-align: center;
+    box-shadow: var(--shadow-lift);
+  }
+
+  .lobby__bar .btn {
+    width: 100%;
+  }
+
+  .lobby__blockers {
+    align-items: center;
+    font-size: 0.85rem;
+  }
+
+  /* شبكة ثابتة الأعمدة: الالتفاف الحر كان يُلصق صفًّا بصف فيتداخل الاسم
+     مع شخصية الصف الذي فوقه. */
+  .results-cast {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s-4) var(--s-2);
+    width: 100%;
+  }
+
+  .results-cast__item {
+    justify-content: flex-end;
+  }
+
+  .results-cast__item .character {
+    height: 84px !important;
+  }
+
+  .results-cast__item strong {
+    font-size: 0.9rem;
+  }
+
+  .results-cast__item .badge {
+    font-size: 0.72rem;
+    padding: 0.25em 0.6em;
+  }
+
+  /* لقطة الكشف: بطاقتان أو ثلاث تتّسع للعرض الضيق */
+  .reveal__cast {
+    gap: var(--s-3);
+  }
 }
 
 /* ══════ مشاهد عامة ══════ */
@@ -682,9 +854,21 @@
   font-family: var(--font-display);
 }
 
+/*
+  الجدول أعرض من شاشة الجوال ويمرَّر أفقيًا. التلاشي على الحافة هو الإشارة
+  الوحيدة التي تخبر المضيف أن هناك أعمدة أخرى — بدونه يظنّ الجدول مقطوعًا.
+*/
 .results-table-wrap {
   overflow-x: auto;
   max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+  mask-image: linear-gradient(to left, transparent 0, #000 2.5rem);
+}
+
+@media (min-width: 900px) {
+  .results-table-wrap {
+    mask-image: none;
+  }
 }
 
 .results-table {

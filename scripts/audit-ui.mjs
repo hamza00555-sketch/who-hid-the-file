@@ -113,8 +113,10 @@ async function scan(page, label) {
   return issues.length;
 }
 
+const HOST_W = Number(process.argv[2]) || 1280;
+const HOST_H = Number(process.argv[3]) || 900;
 const host = await context.newPage();
-await host.setViewportSize({ width: 1280, height: 900 });
+await host.setViewportSize({ width: HOST_W, height: HOST_H });
 await host.goto(BASE);
 await host.waitForSelector('text=إنشاء جلسة');
 await host.waitForLoadState('networkidle');
@@ -237,7 +239,7 @@ await scan(host, 'AE-host-results');
 await scan(players[0], 'AF-player-results');
 
 // مقاسات إضافية للمضيف
-for (const [w, h] of [[1024, 768], [1440, 900], [820, 1180]]) {
+for (const [w, h] of (HOST_W < 800 ? [[390, 844]] : [[1024, 768], [1440, 900], [820, 1180]])) {
   await host.setViewportSize({ width: w, height: h });
   await host.waitForTimeout(600);
   await scan(host, `AG-host-results-${w}`);

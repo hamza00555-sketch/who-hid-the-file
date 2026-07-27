@@ -109,30 +109,38 @@ export function HostLobbyStage({
       </div>
 
       <aside className="lobby__side">
-        <div className="lobby__count">
-          <strong>{players.length}</strong>
-          <span>
-            {players.length === 0
-              ? 'لم ينضم أحد بعد'
-              : `${readyCount} جاهزون من ${players.length} متصلين`}
-          </span>
+        {/* سطر حالة واحد يقرأه المضيف بنظرة — لا رقم عملاق منفصل عن وصفه */}
+        <p className="lobby__count">
+          {players.length === 0 ? (
+            'لم ينضم أحد بعد'
+          ) : (
+            <>
+              <strong>{readyCount}</strong> جاهزون من <strong>{players.length}</strong>
+            </>
+          )}
+        </p>
+
+        {/* الحلقة تمثّل الطاولة الحقيقية — لا معنى لها على شاشة جوال ضيقة */}
+        <div className="lobby__ring">
+          <SeatRing
+            players={players}
+            caption={players.length ? undefined : 'بانتظار اللاعبين'}
+          />
         </div>
 
-        <SeatRing players={players} caption={players.length ? undefined : 'بانتظار اللاعبين'} />
-
-        {/* شارات مدمجة لا قائمة طويلة: الأسماء معروضة أصلًا حول الطاولة */}
         <ul className="lobby__roster">
-          {players.map((player) => (
+          {players.map((player, index) => (
             <li
               key={player.id}
               data-state={
                 !player.connected ? 'offline' : player.ready ? 'ready' : 'waiting'
               }
             >
+              <b aria-hidden="true">{index + 1}</b>
+              {player.name}
               <span aria-hidden="true">
                 {!player.connected ? '⚡' : player.ready ? '✓' : '…'}
               </span>
-              {player.name}
             </li>
           ))}
         </ul>
@@ -182,10 +190,10 @@ function JoinPanel({ code, joinUrl }: { code: string; joinUrl: string }) {
         <p className="join-panel__label">امسحوا الرمز أو اكتبوا</p>
         <p className="join-panel__code">{code}</p>
         <p className="join-panel__url">{joinUrl}</p>
-        <p className="join-panel__hint">
-          كل لاعب يفتح الرابط على جهازه، يكتب اسمه، يختار شخصيته، ثم يضغط «أنا جاهز».
-        </p>
       </div>
+      <p className="join-panel__hint">
+        كل لاعب يفتح الرابط على جهازه، يكتب اسمه، يختار شخصيته، ثم يضغط «أنا جاهز».
+      </p>
     </Panel>
   );
 }
