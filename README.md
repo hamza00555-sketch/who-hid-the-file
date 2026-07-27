@@ -22,8 +22,38 @@ npm run dev
 - **جهاز المضيف:** اضغط «إنشاء جلسة» → يظهر رمز وQR ورابط.
 - **أجهزة اللاعبين:** افتح الرابط أو امسح الـ QR على كل جهاز.
 
-بلا أي إعداد خارجي يعمل المشروع على **النقل المحلي** — عدة تبويبات في نفس المتصفح
-تُشكّل جلسة كاملة (كل تبويب لاعب مستقل). لتشغيل أجهزة حقيقية عبر الشبكة راجع
+---
+
+## ⚠ اللعب بين الأجهزة يحتاج Firebase
+
+بلا متغيرات `VITE_FIREBASE_*` يعمل المشروع على **النقل المحلي**: الجلسة تُحفَظ في
+تخزين المتصفح نفسه. عدة تبويبات في متصفح واحد تُشكّل جلسة كاملة للتجربة، لكن
+**لا يستطيع أي جهاز آخر الانضمام** — لا بالرمز ولا بالرابط ولا بمسح QR، لأنه لا
+يوجد خادم مشترك تُقرأ منه الجلسة. التطبيق يقول ذلك صراحةً في الشاشة الرئيسية
+وفي ردهة المضيف بدل أن يعطي رمزًا لا ينفع.
+
+للتشغيل الحقيقي:
+
+1. أنشئ مشروعًا في [console.firebase.google.com](https://console.firebase.google.com)
+   وفعّل **Realtime Database**.
+2. انسخ قواعد الأمان من [`firebase/database.rules.json`](firebase/database.rules.json)
+   إلى تبويب Rules.
+3. من إعدادات المشروع خذ قيم إعداد الويب، وضعها في `.env` محليًا أو في متغيرات
+   بيئة النشر (Vercel: Settings → Environment Variables):
+
+```bash
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=<project>.firebaseapp.com
+VITE_FIREBASE_DATABASE_URL=https://<project>-default-rtdb.firebaseio.com
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_APP_ID=...
+```
+
+4. فعّل **Anonymous** في Authentication → Sign-in method.
+5. أعد النشر. المتغيرات تُدمج وقت البناء، فلا يكفي إضافتها بلا إعادة نشر.
+
+للتحقق: الشاشة الرئيسية تُظهر شارة «متصل بـ Firebase» بدل إشعار «بلا خادم».
+التفاصيل ومسار الترقية إلى Cloud Functions في
 [`docs/FIREBASE_SCHEMA.md`](docs/FIREBASE_SCHEMA.md).
 
 | الأمر | الغرض |

@@ -906,6 +906,78 @@
   color: var(--text-on-light-muted);
 }
 
+/*
+  جدول بستة أعمدة و`min-width: 40rem` على جوال 390px يعني تمريرًا أفقيًا يقصّ
+  العمود الرابع إلى «خال» و«كار» — والقناع المتلاشي يجعل ما بقي شبحًا.
+  القياس أعطى 1.1:1 هناك، وهو رقم صحيح لا خلل في الأداة: النص فعلًا غير مقروء.
+
+  تحت 900px يصير كل لاعب كتلة قائمة بذاتها، كل حقل باسمه. لا تمرير أفقي،
+  ولا عمود مقصوص، ولا قناع يخفي البيانات.
+*/
+@media (max-width: 899px) {
+  .results-table-wrap {
+    overflow-x: visible;
+    mask-image: none;
+  }
+
+  .results-table,
+  .results-table tbody,
+  .results-table tr,
+  .results-table td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .results-table thead {
+    /* العناوين تنتقل إلى ::before لكل خانة — تُخفى بصريًا لا دلاليًا */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .results-table tr {
+    border: 2px solid oklch(0.85 0.02 250);
+    border-radius: var(--r-md);
+    padding: var(--s-3);
+    margin-bottom: var(--s-3);
+  }
+
+  .results-table td {
+    display: grid;
+    grid-template-columns: 7rem 1fr;
+    gap: var(--s-3);
+    align-items: baseline;
+    padding: var(--s-1) 0;
+    border-bottom: none;
+    white-space: normal;
+  }
+
+  .results-table td::before {
+    content: attr(data-label);
+    font-family: var(--font-display);
+    font-weight: 800;
+    color: var(--blue-deep);
+  }
+
+  /* اسم اللاعب عنوان الكتلة لا حقلًا فيها */
+  .results-table td:first-child {
+    grid-template-columns: 1fr;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.15rem;
+    padding-bottom: var(--s-2);
+    margin-bottom: var(--s-2);
+    border-bottom: 2px solid oklch(0.9 0.015 250);
+  }
+
+  .results-table td:first-child::before {
+    content: none;
+  }
+}
+
 /* ══════ الترجمة الصوتية ══════ */
 
 .host-caption {

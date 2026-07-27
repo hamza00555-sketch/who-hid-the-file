@@ -14,6 +14,7 @@ import { FileProp } from '../ui/components/FileProp';
 import { SceneBackdrop, preloadScenes } from '../ui/components/SceneBackdrop';
 import { preloadDice } from '../ui/components/Dice';
 import { Badge, Button, Panel } from '../ui/components/kit';
+import { LocalModeNotice } from '../ui/components/LocalModeNotice';
 import './home.css';
 
 const DEFAULT_SETTINGS: RoomSettings = {
@@ -34,6 +35,7 @@ export function Home() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [previous, setPrevious] = useState(recallSession());
+  const online = isFirebaseConfigured();
 
   useEffect(() => {
     document.body.dataset.night = 'false';
@@ -69,11 +71,11 @@ export function Home() {
     <div className="screen home">
       <SceneBackdrop tone="evening" />
 
-      <div className="home__badges">
-        <Badge tone={isFirebaseConfigured() ? 'live' : 'warn'}>
-          {isFirebaseConfigured() ? 'متصل بـ Firebase' : 'وضع محلي — بلا خادم'}
-        </Badge>
-      </div>
+      {online && (
+        <div className="home__badges">
+          <Badge tone="live">متصل بـ Firebase</Badge>
+        </div>
+      )}
 
       <div className="screen__body home__body">
         <div className="home__stage" aria-hidden="true">
@@ -89,10 +91,16 @@ export function Home() {
           <p className="home__tagline">{GAME_CONFIG.tagline}</p>
         </header>
 
+        {/*
+          الشارة الصغيرة لم تكن كافية: المضيف يقرأ «وضع محلي» ولا يربطها بأن
+          أصدقاءه لن يستطيعوا الدخول. الإشعار يسبق زر الإنشاء لهذا السبب.
+        */}
+        {!online && <LocalModeNotice place="home" />}
+
         {mode === 'idle' ? (
           <div className="home__actions">
             <Button size="xl" onClick={createRoom} disabled={!ready || busy}>
-              إنشاء جلسة
+              {online ? 'إنشاء جلسة' : 'إنشاء جلسة تجريبية'}
             </Button>
             <Button size="lg" tone="quiet" onClick={() => setMode('joining')}>
               انضمام برمز

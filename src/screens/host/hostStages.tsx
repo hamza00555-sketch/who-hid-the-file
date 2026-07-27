@@ -17,7 +17,9 @@ import type {
   RoundResults,
 } from '../../game/types';
 import { slotOfNightPhase } from '../../game/types';
+import { isFirebaseConfigured } from '../../net/env';
 import { Character } from '../../ui/components/Character';
+import { LocalModeNotice } from '../../ui/components/LocalModeNotice';
 import { Dice } from '../../ui/components/Dice';
 import { FileProp } from '../../ui/components/FileProp';
 import { SeatRing, SeatingEditor } from '../../ui/components/Table';
@@ -176,6 +178,14 @@ function JoinPanel({ code, joinUrl }: { code: string; joinUrl: string }) {
       .then(setQr)
       .catch(() => setQr(null));
   }, [joinUrl]);
+
+  /*
+    بلا خادم لا يوجد مكان مشترك تُخزَّن فيه الجلسة: كل متصفح يحتفظ بها عنده.
+    عرض QR ورابط هنا وعدٌ كاذب — الجهاز الثاني سيرى «لا توجد جلسة بالرمز».
+  */
+  if (!isFirebaseConfigured()) {
+    return <LocalModeNotice place="lobby" />;
+  }
 
   return (
     <Panel tone="paper" className="join-panel">
@@ -786,17 +796,21 @@ export function HostResultsStage({
           <tbody>
             {results.reveal.map((row) => (
               <tr key={row.playerId}>
-                <td>{name(row.playerId)}</td>
-                <td>
+                <td data-label="اللاعب">{name(row.playerId)}</td>
+                <td data-label="الدور">
                   {row.role === 'hider'
                     ? GAME_CONFIG.roles.hider.label
                     : row.role === 'accomplice'
                       ? GAME_CONFIG.roles.accomplice.label
                       : GAME_CONFIG.roles.member.label}
                 </td>
-                <td>{row.effectiveSlots.map((slot) => slotLabel(slot, naming)).join(' + ')}</td>
-                <td>{row.wokeWith.length ? row.wokeWith.map(name).join('، ') : 'كان وحده'}</td>
-                <td>
+                <td data-label="موعده">
+                  {row.effectiveSlots.map((slot) => slotLabel(slot, naming)).join(' + ')}
+                </td>
+                <td data-label="استيقظ مع">
+                  {row.wokeWith.length ? row.wokeWith.map(name).join('، ') : 'كان وحده'}
+                </td>
+                <td data-label="فحص">
                   {row.inspected
                     ? `${name(row.inspected.targetId)} → ${
                         row.inspected.revealedSlot
@@ -805,11 +819,15 @@ export function HostResultsStage({
                       }`
                     : '—'}
                 </td>
-                <td>
-                  {name(row.votedFor)}
-                  {row.votedFor && (
-                    <small> ({results.tally.counts[row.votedFor] ?? 0})</small>
-                  )}
+                {/* عنصر واحد: في التخطيط المكدّس كل ابن خانةُ شبكة مستقلة،
+                    فكان عدد الأصوات ينزل سطرًا وحده بعيدًا عن الاسم */}
+                <td data-label="صوّت لـ">
+                  <span>
+                    {name(row.votedFor)}
+                    {row.votedFor && (
+                      <small> ({results.tally.counts[row.votedFor] ?? 0})</small>
+                    )}
+                  </span>
                 </td>
               </tr>
             ))}

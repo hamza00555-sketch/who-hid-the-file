@@ -12,6 +12,8 @@ import { availableCharacters, ROSTER } from '../../game/roster';
 import { slotOfNightPhase } from '../../game/types';
 import { forgetSession, rememberSession, useRoom, useSecret, useSession } from '../../net/session';
 import { TransportError } from '../../net/transport';
+import { isFirebaseConfigured } from '../../net/env';
+import { LocalModeNotice } from '../../ui/components/LocalModeNotice';
 import { Character } from '../../ui/components/Character';
 import { SceneBackdrop } from '../../ui/components/SceneBackdrop';
 import { Badge, Button, ExitButton, Panel, WaitingNote } from '../../ui/components/kit';
@@ -71,7 +73,15 @@ export function PlayerScreen() {
     return (
       <Shell>
         <h2>لا توجد جلسة بالرمز {code}</h2>
-        <p className="lede">تأكد من الرمز مع المضيف.</p>
+        {/*
+          بلا خادم يكون هذا هو المسار الطبيعي لا الاستثناء: الجلسة أُنشئت على
+          جهاز المضيف وحده. «تأكد من الرمز» نصيحة خاطئة هنا — الرمز صحيح.
+        */}
+        {isFirebaseConfigured() ? (
+          <p className="lede">تأكد من الرمز مع المضيف.</p>
+        ) : (
+          <LocalModeNotice place="lobby" />
+        )}
         <Button onClick={() => navigate('/')}>الرئيسية</Button>
       </Shell>
     );

@@ -1,0 +1,78 @@
+/*
+  إشعار حالة لا إنذار: لوحة ليلية هادئة بعنوان كهرماني، لا سطح مرجاني كامل.
+  اللاعب يقرأ هذا وهو يحاول تشغيل اللعبة، فالمطلوب أن يفهم لا أن يفزع.
+*/
+
+.local-notice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  text-align: start;
+  max-width: 44rem;
+}
+
+.local-notice p {
+  margin: 0;
+  max-width: 62ch;
+  text-wrap: pretty;
+}
+
+.local-notice__title {
+  margin: 0;
+  color: var(--amber);
+  font-size: 1.25rem;
+}
+
+.local-notice__use {
+  color: var(--text-muted);
+}
+
+.local-notice__how {
+  border-top: 2px solid var(--night-edge);
+  padding-top: var(--s-3);
+}
+
+.local-notice__how summary {
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--sky);
+  /* هدف لمس كامل: العنصر الافتراضي سطر نصّي رفيع */
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+}
+
+.local-notice__how > *:not(summary) {
+  margin-top: var(--s-3);
+}
+
+.local-notice__keys {
+  list-style: none;
+  padding: 0;
+  margin: var(--s-3) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.local-notice__keys li,
+.local-notice code {
+  font-family: ui-monospace, 'SF Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--sky-soft);
+  direction: ltr;
+  text-align: start;
+  unicode-bidi: isolate;
+}
+
+.local-notice__keys li {
+  background: var(--night-deep);
+  border-radius: var(--r-sm);
+  padding: var(--s-2) var(--s-3);
+}
+
+.local-notice__ref {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}

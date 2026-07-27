@@ -39,6 +39,18 @@
     radial-gradient(ellipse at 50% 52%, transparent 38%, oklch(0.08 0.03 265 / 0.7) 100%);
 }
 
+/*
+  الفجر أسطع مشاهد الجولة، وعليه تجلس أطول نصوص المضيف (النقاش والتصويت).
+  القياس بالبكسل أعطى 3.9:1 و4.4:1 لنصّ ثانوي فوقه — دون حدّ 4.5:1.
+  تعتيم إضافي في نطاق المحتوى وحده يرفعه بلا أن يُطفئ ضوء الصباح في الأطراف.
+*/
+.scene-backdrop[data-tone='dawn'] .scene-backdrop__vignette {
+  background:
+    linear-gradient(oklch(0.12 0.04 265 / 0.5), oklch(0.12 0.04 265 / 0.5)),
+    radial-gradient(ellipse 88% 70% at 50% 44%, oklch(0.1 0.035 265 / 0.66), transparent 78%),
+    radial-gradient(ellipse at 50% 52%, transparent 34%, oklch(0.08 0.03 265 / 0.72) 100%);
+}
+
 /* الليل العميق: طبقة إضافية تُطفئ المشهد بلا أن تُخفيه */
 .scene-backdrop[data-tone='deep-night'] .scene-backdrop__vignette {
   background:
