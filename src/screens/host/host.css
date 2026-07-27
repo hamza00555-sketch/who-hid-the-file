@@ -18,8 +18,16 @@
   flex-wrap: wrap;
 }
 
+/*
+  إيقاف التمدّد الرأسي: مشاهد المضيف كانت تتوسّط في فراغ واسع فتفقد التماسك.
+  المحتوى يتجمّع ككتلة واحدة، والإيقاع يأتي من تفاوت المسافات لا من الفراغ.
+*/
 .host-body {
-  gap: var(--s-5);
+  gap: var(--s-4);
+}
+
+.host-body > .stage-title + * {
+  margin-top: var(--s-2);
 }
 
 /* ══════ الردهة ══════ */
@@ -230,13 +238,21 @@
 .settings-panel__row input[type='range'] {
   grid-column: 1 / -1;
   accent-color: var(--sky);
-  min-height: 2.5rem;
+  /* 44px: الحد الأدنى لهدف اللمس */
+  min-height: 2.75rem;
 }
 
 .settings-panel__row--switch input {
-  width: 2.75rem;
-  height: 1.6rem;
+  width: 3rem;
+  height: 2.75rem;
   accent-color: var(--mint);
+  cursor: pointer;
+}
+
+/* صف المفتاح كله هدف لمس واحد، لا المربّع الصغير وحده */
+.settings-panel__row--switch {
+  min-height: 2.75rem;
+  cursor: pointer;
 }
 
 .settings-panel__row output {
@@ -343,21 +359,33 @@
   margin-inline: -0.9rem;
 }
 
+/*
+  لوحة التقدّم كانت شريطًا عريضًا شبه فارغ. تُقلَّص إلى عرض محتواها ويُكبَّر
+  الرقم: المضيف يقرأ «كم بقي» من مسافة، وهو المعلومة الوحيدة المطلوبة هنا.
+*/
 .host-progress {
   display: flex;
   flex-direction: column;
   gap: var(--s-3);
   align-items: center;
+  width: auto;
   max-width: 34rem;
+  padding: var(--s-4) var(--s-6);
 }
 
 .host-progress p {
   margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  white-space: nowrap;
 }
 
 .host-progress strong {
   font-family: var(--font-display);
-  font-size: 1.6rem;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  line-height: 1;
+  color: var(--amber);
 }
 
 .host-progress__names {
@@ -386,6 +414,7 @@
   display: flex;
   gap: var(--s-5);
   justify-content: center;
+  margin-block: var(--s-2);
 }
 
 /* ══════ الاستعداد ══════ */

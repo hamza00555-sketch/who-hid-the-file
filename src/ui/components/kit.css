@@ -112,7 +112,8 @@
 }
 .panel--violet {
   --panel-bg: var(--violet);
-  --panel-fg: oklch(0.99 0.005 300);
+  /* نص داكن على البنفسجي كبقية ألوان الـ Accent — الأبيض يعطي 3.5:1 فقط */
+  --panel-fg: oklch(0.21 0.06 305);
 }
 .panel--coral {
   --panel-bg: var(--coral);
@@ -199,7 +200,7 @@
 }
 .badge--secret {
   background: var(--violet);
-  color: oklch(0.99 0.005 300);
+  color: oklch(0.21 0.06 305);
 }
 
 /* ── العدّاد ── */

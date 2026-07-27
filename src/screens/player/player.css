@@ -37,10 +37,20 @@
 
 /* ══════ الانضمام ══════ */
 
+/*
+  شاشة الانضمام أول ما يراه اللاعب، وكل محتواها يجب أن يُنجَز بلا تمرير طويل.
+  `.screen__body` يضبط `align-items: center` فينكمش كل ابن إلى عرض محتواه —
+  لذلك كل عنصر هنا يعلن عرضه الكامل صراحةً، وإلا انهارت شبكة الشخصيات
+  إلى عمود واحد بعرض 88px.
+*/
 .join {
   gap: var(--s-3);
-  align-items: stretch;
   text-align: center;
+  padding-bottom: var(--s-3);
+}
+
+.join > * {
+  width: 100%;
 }
 
 .join__code {
@@ -54,17 +64,21 @@
   letter-spacing: 0.12em;
 }
 
+/* الشخصية والصفة جنبًا إلى جنب: يوفّر نحو 120px رأسيًا مقابل التكديس */
 .join__preview {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: var(--s-2);
+  justify-content: center;
+  gap: var(--s-3);
+  text-align: start;
 }
 
 .join__trait {
   color: var(--sky);
   font-weight: 700;
-  max-width: 26ch;
+  max-width: 20ch;
+  font-size: 0.95rem;
+  margin: 0;
 }
 
 .join__label {
@@ -93,11 +107,27 @@
   font-weight: 700;
 }
 
+.join__cta {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  padding: var(--s-3) 0 max(var(--s-2), env(safe-area-inset-bottom));
+  background: linear-gradient(
+    to top,
+    var(--night-deep) 55%,
+    oklch(0.16 0.05 265 / 0.85) 80%,
+    transparent
+  );
+  z-index: var(--z-sticky);
+}
+
 .join__avatars {
   list-style: none;
   padding: 0;
+  margin: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  /* خمسة أعمدة على هاتف 390px فأعلى — العشر شخصيات في صفّين */
+  grid-template-columns: repeat(auto-fill, minmax(4rem, 1fr));
   gap: var(--s-2);
 }
 
@@ -106,14 +136,15 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--s-1);
-  padding: var(--s-2);
+  gap: 2px;
+  padding: var(--s-1);
   border: 2px solid var(--night-edge);
   border-radius: var(--r-md);
   background: var(--night);
-  font-size: 0.85rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  min-height: 6rem;
+  min-height: 4.75rem;
+  line-height: 1.2;
 }
 
 .join__avatars button[data-selected] {
@@ -144,9 +175,17 @@
   letter-spacing: 0.08em;
 }
 
+/*
+  الكهرماني على البنفسجي كان 1.9:1، والأبيض 3.5:1 — كلاهما دون 4.5:1.
+  الحل نص داكن، وهو أيضًا ما تفعله بقية ألوان الـ Accent (نعناعي، كهرماني، سماوي).
+*/
 .role-cover--secret {
   background: var(--violet);
   rotate: 3deg;
+}
+
+.role-cover--secret span {
+  color: oklch(0.21 0.06 305);
 }
 
 .role-cover--empty {

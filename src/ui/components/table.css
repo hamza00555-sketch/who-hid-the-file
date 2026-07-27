@@ -201,9 +201,10 @@ button.player-card:active:not(:disabled) {
   flex: 1;
 }
 
+/* 2.75rem = 44px، الحد الأدنى لهدف اللمس */
 .seating__move {
-  width: 2.4rem;
-  height: 2.4rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border-radius: var(--r-sm);
   border: 2px solid var(--ink);
   background: var(--night);

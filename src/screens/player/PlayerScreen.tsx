@@ -267,7 +267,7 @@ function JoinForm({
         </p>
 
         <div className="join__preview">
-          <Character characterId={selected.id} state="idle" size={200} />
+          <Character characterId={selected.id} state="idle" size={130} eager />
           <p className="join__trait">{selected.trait}</p>
         </div>
 
@@ -301,7 +301,7 @@ function JoinForm({
                 onClick={() => setAvatarId(character.id)}
                 aria-label={character.name}
               >
-                <Character characterId={character.id} size={64} still />
+                <Character characterId={character.id} size={46} still />
                 <span>{character.name}</span>
               </button>
             </li>
@@ -324,9 +324,12 @@ function JoinForm({
           </p>
         )}
 
-        <Button size="lg" full onClick={submit} disabled={!valid || busy}>
-          ادخل الجلسة
-        </Button>
+        {/* الإجراء الرئيسي ملتصق بأسفل الشاشة: يبقى في المتناول مهما طال المحتوى */}
+        <div className="join__cta">
+          <Button size="lg" full onClick={submit} disabled={!valid || busy}>
+            ادخل الجلسة
+          </Button>
+        </div>
       </div>
     </div>
   );
