@@ -3,7 +3,7 @@
  * لا بطاقات بيضاء ولا زجاج ضبابي.
  */
 
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import './kit.css';
 
 /* ── الأزرار ── */
@@ -34,6 +34,71 @@ export function Button({
     >
       {icon && <span className="btn__icon">{icon}</span>}
       <span>{children}</span>
+    </button>
+  );
+}
+
+/* ── الخروج والرجوع ── */
+
+/**
+ * زر خروج/رجوع.
+ *
+ * يقع في الحافة البادئة (يمين الشاشة العربية) والسهم يشير يمينًا، لأن اتجاه
+ * «الخلف» في واجهة عربية هو اليمين. الموضع نفسه على كل شاشة.
+ *
+ * `confirmLabel` لخطوة تأكيد ثانية: تُستخدم حين يكون الخروج مكلفًا — خروج
+ * المضيف يترك بقية اللاعبين بلا مقدّم، فلا يصح أن يحدث بلمسة واحدة عابرة.
+ */
+export function ExitButton({
+  label = 'رجوع',
+  confirmLabel,
+  onExit,
+  className = '',
+}: {
+  label?: string;
+  /** إن مُرّر، يتحوّل الزر إلى خطوة تأكيد قبل التنفيذ */
+  confirmLabel?: string;
+  onExit: () => void;
+  className?: string;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const confirmRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!confirming) return;
+    // الزر الذي ضُغط اختفى: بلا نقل التركيز يضيع مستخدم لوحة المفاتيح أو قارئ الشاشة
+    confirmRef.current?.focus();
+    // التراجع تلقائيًا إن انشغل المضيف عن الزر
+    const timer = window.setTimeout(() => setConfirming(false), 5000);
+    return () => window.clearTimeout(timer);
+  }, [confirming]);
+
+  if (confirmLabel && confirming) {
+    return (
+      <span className={`exit exit--confirming ${className}`}>
+        <button
+          type="button"
+          ref={confirmRef}
+          className="exit__btn exit__btn--danger"
+          onClick={onExit}
+        >
+          {confirmLabel}
+        </button>
+        <button type="button" className="exit__btn" onClick={() => setConfirming(false)}>
+          إلغاء
+        </button>
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className={`exit__btn ${className}`}
+      onClick={() => (confirmLabel ? setConfirming(true) : onExit())}
+    >
+      <span aria-hidden="true">→</span>
+      {label}
     </button>
   );
 }

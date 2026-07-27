@@ -7,8 +7,17 @@
 }
 
 .sheet__head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
   text-align: center;
   margin-bottom: var(--s-6);
+}
+
+/* في صفّه الخاص لا طافيًا: الطفو كان يلفّ العنوان حوله فيكسره سطرين */
+.sheet__head .exit__btn {
+  align-self: flex-start;
 }
 
 .sheet__head .lede {

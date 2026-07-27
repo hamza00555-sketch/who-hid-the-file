@@ -53,8 +53,16 @@
   width: 100%;
 }
 
+.join__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
 .join__code {
   color: var(--text-muted);
+  margin: 0;
 }
 
 .join__code strong {

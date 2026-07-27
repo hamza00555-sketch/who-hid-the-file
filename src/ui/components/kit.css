@@ -88,6 +88,58 @@
   line-height: 1;
 }
 
+/* ── الرجوع: خافت لأنه مخرج لا دعوة، لكن بمساحة لمس كاملة ── */
+
+.exit {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.exit__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 2.75rem;
+  padding: 0 var(--s-3);
+  background: oklch(0.24 0.04 262 / 0.72);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  border: 2px solid var(--night-edge);
+  border-radius: var(--r-pill);
+  transition:
+    filter var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+
+/* السهم يمينًا: اتجاه «الخلف» في واجهة عربية */
+.exit__btn > span {
+  font-size: 1.15em;
+  line-height: 1;
+}
+
+.exit__btn:hover {
+  filter: brightness(1.35);
+  border-color: var(--sky);
+}
+
+.exit__btn:active {
+  transform: translateY(1px);
+}
+
+/*
+  نص داكن لا أبيض: الأبيض على المرجاني 3.31:1، ودون 4.5:1 المطلوبة لنص بهذا
+  الحجم. الداكن 5.46:1، وهو أيضًا ما تفعله بقية ألوان الـ Accent.
+  (`btn--danger` يبقى أبيض لأنه بحجم xl فيسري عليه حدّ 3:1.)
+*/
+.exit__btn--danger {
+  background: var(--coral);
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
 /* ── اللوحات ── */
 
 .panel {

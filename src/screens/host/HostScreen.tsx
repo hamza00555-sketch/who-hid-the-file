@@ -22,9 +22,9 @@ import { planAccomplices } from '../../game/accomplice';
 import { reorderSeats } from '../../game/seating';
 import { isSupportedPlayerCount } from '../../game/rules';
 import { slotOfNightPhase, type Phase } from '../../game/types';
-import { useRoom, useSession } from '../../net/session';
+import { forgetSession, useRoom, useSession } from '../../net/session';
 import { SceneBackdrop, type SceneTone } from '../../ui/components/SceneBackdrop';
-import { Badge, Button, WaitingNote } from '../../ui/components/kit';
+import { Badge, Button, ExitButton, WaitingNote } from '../../ui/components/kit';
 import {
   HostDiceStage,
   HostDiscussionStage,
@@ -332,7 +332,22 @@ export function HostScreen() {
       <SceneBackdrop tone={SCENE_TONE[phase] ?? 'night'} table={!isNight} />
 
       <header className="host-bar">
-        <div className="host-bar__group">
+        <div className="host-bar__group host-bar__group--lead">
+          {/*
+            الخروج في الردهة فقط: بعد بدء الجولة يصبح هذا الجهاز هو المقدّم،
+            ومغادرته تترك الطاولة بلا صوت ولا تحكّم. وحتى في الردهة يحتاج
+            تأكيدًا لأن الجلسة والرمز يخصّان بقية اللاعبين لا المضيف وحده.
+          */}
+          {phase === 'lobby' && (
+            <ExitButton
+              label="خروج"
+              confirmLabel="أغلق الجلسة"
+              onExit={() => {
+                forgetSession();
+                navigate('/');
+              }}
+            />
+          )}
           <Badge tone="good">رمز الجلسة {code}</Badge>
           <Badge tone={connection === 'online' ? 'live' : 'warn'}>
             {connection === 'online' ? 'متصل' : 'انقطع الاتصال'}

@@ -5,10 +5,12 @@
  * الأصول النهائية لاحقًا. الرابط: `#/roster`
  */
 
+import { useNavigate } from 'react-router-dom';
 import { CHARACTER_STATES, ROSTER } from '../game/roster';
 import { Character } from '../ui/components/Character';
 import { Dice } from '../ui/components/Dice';
 import { FileProp } from '../ui/components/FileProp';
+import { ExitButton } from '../ui/components/kit';
 import './roster-sheet.css';
 
 const STATE_LABELS: Record<string, string> = {
@@ -24,9 +26,12 @@ const STATE_LABELS: Record<string, string> = {
 };
 
 export function RosterSheet() {
+  const navigate = useNavigate();
+
   return (
     <div className="sheet">
       <header className="sheet__head">
+        <ExitButton label="الرئيسية" onExit={() => navigate('/')} />
         <h1>ورقة الشخصيات</h1>
         <p className="lede">
           {ROSTER.length} شخصيات × {CHARACTER_STATES.length} حالات — كلها مولّدة من

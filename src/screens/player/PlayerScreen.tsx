@@ -10,11 +10,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { GAME_CONFIG } from '../../config/game.config';
 import { availableCharacters, ROSTER } from '../../game/roster';
 import { slotOfNightPhase } from '../../game/types';
-import { rememberSession, useRoom, useSecret, useSession } from '../../net/session';
+import { forgetSession, rememberSession, useRoom, useSecret, useSession } from '../../net/session';
 import { TransportError } from '../../net/transport';
 import { Character } from '../../ui/components/Character';
 import { SceneBackdrop } from '../../ui/components/SceneBackdrop';
-import { Badge, Button, Panel, WaitingNote } from '../../ui/components/kit';
+import { Badge, Button, ExitButton, Panel, WaitingNote } from '../../ui/components/kit';
 import {
   PlayerDiceStage,
   PlayerLobbyStage,
@@ -85,6 +85,7 @@ export function PlayerScreen() {
         takenAvatars={players.map((player) => player.avatarId)}
         locked={state.meta.phase !== 'lobby'}
         full={players.length >= GAME_CONFIG.players.max}
+        onBack={() => navigate('/')}
         onJoin={async (name, avatarId) => {
           if (!playerId) return;
           await transport.joinRoom({ code, playerId, name, avatarId });
@@ -96,12 +97,29 @@ export function PlayerScreen() {
 
   const offline = connection !== 'online';
 
+  /*
+    الخروج متاح في الردهة وبعد إعلان النتيجة فقط. أثناء الأدوار والليل والتصويت
+    الشاشة تتبع `meta/phase`، والرجوع منها يكسر الجولة على بقية الطاولة.
+  */
+  const canLeave = phase === 'lobby' || phase === 'results';
+
+  const leave = async () => {
+    try {
+      await transport.leaveRoom(code, me.id);
+    } catch {
+      /* الخروج لا ينتظر الشبكة — المهم أن يغادر اللاعب شاشته */
+    }
+    forgetSession();
+    navigate('/');
+  };
+
   return (
     <div className={`screen screen--player ${isNight ? 'screen--blackout' : ''}`}>
       {!isNight && <SceneBackdrop tone={phase === 'discussion' ? 'dawn' : 'night'} table={false} />}
 
       {!isNight && (
         <header className="player-bar">
+          {canLeave && <ExitButton label="خروج" onExit={() => void leave()} />}
           <span className="player-bar__me">
             <Character characterId={me.avatarId} size={34} still />
             <strong>{me.name}</strong>
@@ -214,6 +232,7 @@ function JoinForm({
   locked,
   full,
   onJoin,
+  onBack,
 }: {
   code: string;
   takenNames: string[];
@@ -221,6 +240,7 @@ function JoinForm({
   locked: boolean;
   full: boolean;
   onJoin: (name: string, avatarId: string) => Promise<void>;
+  onBack: () => void;
 }) {
   const takenKey = takenAvatars.join(',');
   const options = useMemo(
@@ -262,9 +282,12 @@ function JoinForm({
     <div className="screen screen--player">
       <SceneBackdrop tone="evening" table={false} />
       <div className="screen__body join">
-        <p className="join__code">
-          جلسة <strong>{code}</strong>
-        </p>
+        <div className="join__top">
+          <ExitButton label="خروج" onExit={onBack} />
+          <p className="join__code">
+            جلسة <strong>{code}</strong>
+          </p>
+        </div>
 
         <div className="join__preview">
           <Character characterId={selected.id} state="idle" size={130} eager />
