@@ -59,3 +59,34 @@ export const STATES = {
 export function characterPrompt(characterId, stateId) {
   return `A CHIBI CARTOON MASCOT character.\n\nCHARACTER: ${CHARACTERS[characterId]}\n\n${STATES[stateId]}\n\n${STYLE}`;
 }
+
+/**
+ * أيقونة التطبيق.
+ *
+ * لا تستعمل كتلة `STYLE` كما هي: تلك تفرض خلفية رمادية مسطّحة وهامشًا حول
+ * شخصية واحدة، والأيقونة عكس ذلك تمامًا — ملء الإطار من حافة إلى حافة.
+ * فقرة الأسلوب هنا مكرّرة عمدًا بما يخص الأيقونة وحدها.
+ *
+ * الفكرة: أربعة يطلّون من جهات الإطار الأربع كأنهم ينظرون عبر نافذة، والملف
+ * في الوسط. المطلوب أن تبقى مقروءة عند 48px، فالعدد أربعة لا أكثر، وبينهم
+ * فجوات كحلية تفصل الصور الظلّية.
+ */
+export const APP_ICON_PROMPT = `A SQUARE MOBILE APP ICON, flat vector cartoon. Full-bleed, edge to edge, NO border, NO frame, NO rounded corners, NO text, NO letters, NO watermark.
+
+COMPOSITION: exactly FOUR big-headed cartoon characters lean in from the four sides of the square - ONE from the top edge, ONE from the left edge, ONE from the right edge, ONE from the bottom edge - as if crowding around a window and peering in. Each is CROPPED by the edge so only the huge head and shoulders are visible. All four stare inward at the centre. Leave clear dark navy gaps BETWEEN the four heads so each silhouette reads as a separate bold shape - do NOT let the faces touch or merge into each other.
+
+CENTRE: a big chunky MANILA FOLDER stands upright in the exact middle, occupying about one third of the whole square - large and dominant. Warm golden-yellow (#E8A93A) flat fill, a few crisp white paper sheets poking out of the top, a bold RED WAX SEAL with a white CHECK MARK on its face, and two darker golden horizontal bars below the seal. It is the single brightest thing in the image.
+
+EXPRESSIONS: wide-eyed suspicion. Enormous cartoon eyes, all pupils aimed at the folder.
+
+CHARACTERS: modern Saudi office colleagues. Two men in crisp white thobes, one with a red-and-white checkered shemagh, one with a plain white ghutra, both with black agal. Two women in coloured abayas, one teal headscarf, one plum headscarf. Varied skin tones.
+
+PROPORTIONS: chibi mascots, head ENORMOUS - about one third of the figure, as wide as the shoulders. NOT realistic anatomy.
+
+STYLE - STRICT: early-2000s TV action-cartoon, drawn as FLAT VECTOR ART. Bold uniform ink outline on every single shape, thick even marker-pen weight, outline colour is DARK NAVY BLUE #101A35 - never black. Completely FLAT cel shading: every colour is ONE solid flat fill plus at most ONE hard-edged darker shadow shape with a crisp edge.
+
+ABSOLUTELY FORBIDDEN: gradients, colour ramps, airbrush, soft shading, blur, glow, vignette, ambient occlusion, 3D rendering, cloth texture, glossy highlights, painterly brushwork. Every pixel belongs to one of a small number of flat colours. If any area fades smoothly from one tone to another, it is WRONG.
+
+BACKGROUND: one single solid flat deep midnight navy #0F1A35 filling all gaps. Perfectly uniform, no vignette, no lighting falloff.
+
+The image must stay instantly readable shrunk to 48x48 pixels: only a few very large bold shapes, high contrast between the golden folder and the dark background.`;

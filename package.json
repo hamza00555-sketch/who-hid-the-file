@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:live": "vitest run --mode production --config vitest.live.config.ts",
     "verify:rules": "node scripts/verify-rules.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "icons": "node scripts/build-icons.mjs"
   },
   "dependencies": {
     "firebase": "^12.16.0",
