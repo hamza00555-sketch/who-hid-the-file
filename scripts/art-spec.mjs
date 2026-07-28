@@ -67,26 +67,36 @@ export function characterPrompt(characterId, stateId) {
  * شخصية واحدة، والأيقونة عكس ذلك تمامًا — ملء الإطار من حافة إلى حافة.
  * فقرة الأسلوب هنا مكرّرة عمدًا بما يخص الأيقونة وحدها.
  *
- * الفكرة: أربعة يطلّون من جهات الإطار الأربع كأنهم ينظرون عبر نافذة، والملف
- * في الوسط. المطلوب أن تبقى مقروءة عند 48px، فالعدد أربعة لا أكثر، وبينهم
- * فجوات كحلية تفصل الصور الظلّية.
+ * الفكرة: خمسة موظفين يتحلّقون حول الملف كأنهم يطلّون عليه، والخلفية مكتب
+ * بدرجات زرقاء. يملؤون الإطار كله.
+ *
+ * **التعابير أهم سطر في هذا الموجّه.** أول جيل جاء بحواجب مائلة للأسفل في كل
+ * الوجوه، فقرأت الأيقونة كغضب وعِراك — وهو انطباع خاطئ عن لعبة اجتماعية مرحة.
+ * المطلوب فضول وحيرة: حواجب مرفوعة، عيون متسعة، إصبع على الذقن، ابتسامات
+ * خفيفة. المنع هنا صريح ومكرّر لأن النموذج يميل إلى الغضب افتراضيًا.
+ *
+ * الخلفية زرقاء بالكامل عمدًا: مكتب يُقرأ كمكان عمل لكنه داكن ومنخفض التباين،
+ * فيبقى الملف الذهبي أسطع شيء في الأيقونة ويظلّ مميّزًا عند 32px.
+ *
+ * الملف المعتمد `art/app-icon-source.png` وُلِّد خارج هذا الأنبوب (تعذّر
+ * استدعاء أداة التوليد)، وهذا الموجّه هو مرجعه لإعادة التوليد.
  */
 export const APP_ICON_PROMPT = `A SQUARE MOBILE APP ICON, flat vector cartoon. Full-bleed, edge to edge, NO border, NO frame, NO rounded corners, NO text, NO letters, NO watermark.
 
-COMPOSITION: exactly FOUR big-headed cartoon characters lean in from the four sides of the square - ONE from the top edge, ONE from the left edge, ONE from the right edge, ONE from the bottom edge - as if crowding around a window and peering in. Each is CROPPED by the edge so only the huge head and shoulders are visible. All four stare inward at the centre. Leave clear dark navy gaps BETWEEN the four heads so each silhouette reads as a separate bold shape - do NOT let the faces touch or merge into each other.
+COMPOSITION: FIVE big-headed cartoon characters crowd in from all sides of the square and FILL THE FRAME, cropped by the edges - one leaning in from the TOP, one from the UPPER LEFT, one from the RIGHT, one from the LOWER LEFT, one from the BOTTOM. Their heads and shoulders cover the corners. They lean inward around a folder in the centre, like colleagues huddling over a desk to peek at something.
 
-CENTRE: a big chunky MANILA FOLDER stands upright in the exact middle, occupying about one third of the whole square - large and dominant. Warm golden-yellow (#E8A93A) flat fill, a few crisp white paper sheets poking out of the top, a bold RED WAX SEAL with a white CHECK MARK on its face, and two darker golden horizontal bars below the seal. It is the single brightest thing in the image.
+EXPRESSIONS - CRITICAL: they are CURIOUS and PUZZLED, never angry. This is a light-hearted party game, not a confrontation. Eyebrows are RAISED HIGH and CURVED in surprise and interest. ABSOLUTELY NO angry eyebrows, NO eyebrows slanted down toward the nose, NO furrowed brow, NO scowl, NO glare, NO frown, NO menacing look. If any face looks angry or stern, it is WRONG. Big round eyes wide open with curiosity, pupils looking toward the folder. Mouths: two small soft smiles, one small round 'oh' of surprise, two neutral relaxed. One character rests a finger on the chin thinking, one tilts the head. Overall mood: playful intrigue, amused wondering.
 
-EXPRESSIONS: wide-eyed suspicion. Enormous cartoon eyes, all pupils aimed at the folder.
+CENTRE: a chunky MANILA FOLDER stands upright in the middle, about one quarter of the square, warm golden-yellow (#E8A93A) flat fill, crisp white paper sheets poking out of the top, a bold RED WAX SEAL with a white CHECK MARK on its face, two darker golden horizontal bars below. It is the brightest thing in the image and fully visible.
 
-CHARACTERS: modern Saudi office colleagues. Two men in crisp white thobes, one with a red-and-white checkered shemagh, one with a plain white ghutra, both with black agal. Two women in coloured abayas, one teal headscarf, one plum headscarf. Varied skin tones.
+CHARACTERS: modern Saudi office colleagues. Two men in crisp white thobes - one red-and-white checkered shemagh, one plain white ghutra, both black agal. Three women in coloured abayas with teal, plum and navy headscarves. Varied skin tones.
 
-PROPORTIONS: chibi mascots, head ENORMOUS - about one third of the figure, as wide as the shoulders. NOT realistic anatomy.
+PROPORTIONS: chibi mascots, head ENORMOUS relative to body, as wide as the shoulders. NOT realistic anatomy.
 
-STYLE - STRICT: early-2000s TV action-cartoon, drawn as FLAT VECTOR ART. Bold uniform ink outline on every single shape, thick even marker-pen weight, outline colour is DARK NAVY BLUE #101A35 - never black. Completely FLAT cel shading: every colour is ONE solid flat fill plus at most ONE hard-edged darker shadow shape with a crisp edge.
+BACKGROUND - an OFFICE INTERIOR entirely in BLUE SHADES: simplified flat shapes of desks, desktop monitors, a shelf with binders, tall window blinds, all in a narrow range of muted blues from deep midnight navy to dusty steel blue. Reads as a modern workplace but stays dark, low-contrast and quiet so the characters and golden folder pop. Visible only in the gaps between heads. NO warm colours in the background.
 
-ABSOLUTELY FORBIDDEN: gradients, colour ramps, airbrush, soft shading, blur, glow, vignette, ambient occlusion, 3D rendering, cloth texture, glossy highlights, painterly brushwork. Every pixel belongs to one of a small number of flat colours. If any area fades smoothly from one tone to another, it is WRONG.
+STYLE - STRICT: early-2000s TV action-cartoon as FLAT VECTOR ART. Bold uniform ink outline on every shape, thick even marker-pen weight, outline colour DARK NAVY BLUE #101A35 - never black. Completely FLAT cel shading: one solid fill plus at most one hard-edged shadow shape.
 
-BACKGROUND: one single solid flat deep midnight navy #0F1A35 filling all gaps. Perfectly uniform, no vignette, no lighting falloff.
+FORBIDDEN: gradients, airbrush, soft shading, blur, glow, vignette, 3D rendering, cloth texture, glossy highlights, painterly brushwork.
 
-The image must stay instantly readable shrunk to 48x48 pixels: only a few very large bold shapes, high contrast between the golden folder and the dark background.`;
+Must stay readable shrunk to 48x48 pixels.`;
