@@ -89,7 +89,7 @@ EXPRESSIONS - CRITICAL: they are CURIOUS and PUZZLED, never angry. This is a lig
 
 CENTRE: a chunky MANILA FOLDER stands upright in the middle, about one quarter of the square, warm golden-yellow (#E8A93A) flat fill, crisp white paper sheets poking out of the top, a bold RED WAX SEAL with a white CHECK MARK on its face, two darker golden horizontal bars below. It is the brightest thing in the image and fully visible.
 
-CHARACTERS: modern Saudi office colleagues. Two men in crisp white thobes - one red-and-white checkered shemagh, one plain white ghutra, both black agal. Three women in coloured abayas with teal, plum and navy headscarves. Varied skin tones.
+CHARACTERS: modern Saudi office colleagues. Two men in crisp white thobes - one red-and-white checkered shemagh, one plain white ghutra, both black agal. Three women in coloured abayas: one teal headscarf, one plum headscarf, and one in a dark navy niqab with only her expressive eyes showing. Varied skin tones.
 
 PROPORTIONS: chibi mascots, head ENORMOUS relative to body, as wide as the shoulders. NOT realistic anatomy.
 
