@@ -78,15 +78,16 @@ export class FirebaseTransport implements RoomTransport {
   }
 
   async joinRoom({ code, playerId, name, avatarId }: JoinRequest): Promise<void> {
-    const snapshot = await get(ref(db(), room(code)));
-    if (!snapshot.exists()) {
+    // مساران منفصلان: قراءة `rooms/$code` كاملًا مرفوضة (لا `.read` عند الجذر)
+    const [metaSnapshot, playersSnapshot] = await Promise.all([
+      get(ref(db(), `${room(code)}/meta`)),
+      get(ref(db(), `${room(code)}/players`)),
+    ]);
+    if (!metaSnapshot.exists()) {
       throw new TransportError('لا توجد جلسة بهذا الرمز.', 'room-not-found');
     }
-    const value = snapshot.val() as {
-      meta: RoomState['meta'];
-      players?: Record<string, PlayerPublic>;
-    };
-    const players = value.players ?? {};
+    const value = { meta: metaSnapshot.val() as RoomState['meta'] };
+    const players = (playersSnapshot.val() ?? {}) as Record<string, PlayerPublic>;
     const existing = players[playerId];
     const others = Object.values(players).filter((p) => p.id !== playerId);
 
@@ -141,29 +142,71 @@ export class FirebaseTransport implements RoomTransport {
     });
   }
 
+  /*
+    اشتراك على كل مسار عام وحده، لا على `rooms/$code` كاملًا.
+
+    القراءة لا تتوارث صعودًا: لا توجد `.read` عند جذر الغرفة عمدًا، لأن منحها
+    هناك يتسرّب إلى `secrets` و`votes` تحتها — وهو بالضبط ما تمنعه اللعبة.
+    فالاشتراك الجامع كان يُرفض بـ Permission denied ويترك كل جهاز بلا حالة.
+  */
   watchRoom(code: string, onChange: (state: RoomState | null) => void): () => void {
-    return onValue(ref(db(), room(code)), (snapshot) => {
-      if (!snapshot.exists()) return onChange(null);
-      const value = snapshot.val() as {
-        meta: RoomState['meta'];
-        settings: RoomSettings;
-        players?: Record<string, PlayerPublic>;
-        round?: {
-          progress?: RoomState['progress'];
-          votes?: Record<string, string>;
-          results?: RoundResults | null;
-        };
-      };
+    const parts: {
+      meta?: RoomState['meta'] | null;
+      settings?: RoomSettings;
+      players: Record<string, PlayerPublic>;
+      progress: RoomState['progress'];
+      results: RoundResults | null;
+    } = { players: {}, progress: {}, results: null };
+
+    /*
+      لا تُبثّ حالة قبل أن يصل كل مسار مرة واحدة على الأقل. الاشتراك الجامع
+      السابق كان يسلّم لقطة واحدة كاملة؛ التفريق يجعلها تصل قطعًا، وبثّ أول
+      قطعة يعطي حالةً بلا `settings` — فتقرأ الشاشة `settings.diceMode`
+      وتجدها undefined.
+    */
+    const paths = ['meta', 'settings', 'players', 'progress', 'results'] as const;
+    const seen = new Set<(typeof paths)[number]>();
+    const emit = (path: (typeof paths)[number]) => {
+      seen.add(path);
+      // غرفة غير موجودة: تُعلن فورًا ولا تنتظر بقية المسارات
+      if (seen.has('meta') && !parts.meta) return onChange(null);
+      if (seen.size < paths.length) return;
+      if (!parts.meta) return onChange(null);
       onChange({
-        meta: value.meta,
-        settings: value.settings,
-        players: value.players ?? {},
-        progress: value.round?.progress ?? {},
-        results: value.round?.results ?? null,
+        meta: parts.meta,
+        settings: parts.settings ?? ({} as RoomSettings),
+        players: parts.players,
+        progress: parts.progress,
+        results: parts.results,
         // اللاعب لا يستطيع قراءة الأصوات، فيُشتق العدد من أعلام التقدم.
-        votesSubmitted: Object.values(value.round?.progress ?? {}).filter((p) => p.voted).length,
+        votesSubmitted: Object.values(parts.progress).filter((p) => p.voted).length,
       });
-    });
+    };
+
+    const unsubs = [
+      onValue(ref(db(), `${room(code)}/meta`), (s) => {
+        parts.meta = s.exists() ? (s.val() as RoomState['meta']) : null;
+        emit('meta');
+      }),
+      onValue(ref(db(), `${room(code)}/settings`), (s) => {
+        if (s.exists()) parts.settings = s.val() as RoomSettings;
+        emit('settings');
+      }),
+      onValue(ref(db(), `${room(code)}/players`), (s) => {
+        parts.players = s.exists() ? (s.val() as Record<string, PlayerPublic>) : {};
+        emit('players');
+      }),
+      onValue(ref(db(), `${room(code)}/round/progress`), (s) => {
+        parts.progress = s.exists() ? (s.val() as RoomState['progress']) : {};
+        emit('progress');
+      }),
+      onValue(ref(db(), `${room(code)}/round/results`), (s) => {
+        parts.results = s.exists() ? (s.val() as RoundResults) : null;
+        emit('results');
+      }),
+    ];
+
+    return () => unsubs.forEach((un) => un());
   }
 
   watchConnection(onChange: (status: ConnectionStatus) => void): () => void {

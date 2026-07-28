@@ -8,5 +8,10 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
+    /*
+      الاختبارات الحيّة تحتاج شبكة ومشروع Firebase حقيقيًا وتكتب فيه، فلا تُشغَّل
+      ضمن `npm test`. مكانها `npm run test:live`.
+    */
+    exclude: ['**/node_modules/**', '**/__tests__/live/**'],
   },
 });
