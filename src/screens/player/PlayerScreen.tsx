@@ -176,7 +176,16 @@ export function PlayerScreen() {
           />
         )}
 
-        {isNight && <PlayerNightStage />}
+        {isNight && (
+          <PlayerNightStage
+            code={code}
+            me={me}
+            secret={secret}
+            players={players}
+            settings={state.settings}
+            slot={nightSlot}
+          />
+        )}
 
         {phase === 'secret-actions' && (
           <PlayerSecretStage
@@ -184,6 +193,7 @@ export function PlayerScreen() {
             me={me}
             secret={secret}
             players={players}
+            settings={state.settings}
             resolved={state.meta.secretStage === 'resolved'}
             acked={state.progress[me.id]?.secretAck ?? false}
           />

@@ -283,6 +283,41 @@
   user-select: none;
 }
 
+/*
+  ── المستيقظ وحده أثناء الليل ──
+
+  رموز الليل تُخفت النص عمدًا (‎--text‎ إلى 0.62) لأن أحدًا لا يُفترض أن يقرأ.
+  لكن هذا اللاعب يقرأ فعلًا: اسمَي جاريه ثم موعد الاستيقاظ. فتُعاد القراءة
+  هنا وحدها.
+
+  ولا تُعاد إلى سطوع النهار: الشاشة مضاءة في غرفة معتمة أمام وجه واحد، وحوله
+  لاعبون مغمضون. الهدف «مقروء بلا أن يضيء الغرفة» لا «ساطع».
+*/
+.night-awake {
+  --text: oklch(0.84 0.02 250);
+  --text-muted: oklch(0.68 0.025 250);
+  --night: oklch(0.18 0.05 264);
+  --night-lift: oklch(0.24 0.055 262);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-4);
+  width: 100%;
+  max-width: 26rem;
+  margin-inline: auto;
+  text-align: center;
+  color: var(--text);
+}
+
+.night-awake h2 {
+  color: var(--text);
+}
+
+.night-awake .stack {
+  width: 100%;
+}
+
 .night-blackout__dot {
   width: 5px;
   height: 5px;

@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { GAME_CONFIG, slotLabel } from '../../config/game.config';
 import { characterById, type CharacterState } from '../../game/roster';
 import { chooseSlot, submitPhysicalDice } from '../../game/deal';
-import { canInspect } from '../../game/night';
+import { canInspect, nightViewFor } from '../../game/night';
 import { neighboursOf } from '../../game/seating';
 import { rulesFor } from '../../game/rules';
 import { validateVote, voteOptions } from '../../game/vote';
@@ -369,12 +369,145 @@ function SlotChoice({
 
 /* ══════════════════════ الليل ══════════════════════ */
 
-export function PlayerNightStage() {
+/**
+ * شاشة الليل.
+ *
+ * الأصل إعتام كامل: الجهاز لا يُلمس ولا يضيء. الاستثناء الوحيد أن يكون
+ * اللاعب مستيقظًا وحده في هذه اللحظة **وفي النمط الرقمي** — عندها يفحص
+ * جاره من جهازه، وهو نظير رفع الكوب في نمط النرد الحقيقي.
+ *
+ * في نمط النرد والأكواب لا شيء على الشاشة إطلاقًا: الراوي يطلب رفع الكوب،
+ * والمعلومة تحت الكوب لا في الجهاز. إضاءة الشاشة هناك تفضح المستيقظ.
+ */
+export function PlayerNightStage({
+  code,
+  me,
+  secret,
+  players,
+  settings,
+  slot,
+}: {
+  code: string;
+  me: PlayerPublic;
+  secret: PlayerSecret | null;
+  players: PlayerPublic[];
+  settings: RoomSettings;
+  slot: WakeSlot | null;
+}) {
+  const view = nightViewFor(secret, slot, players.length, settings.diceMode);
+
+  if (view === 'pick' && secret) {
+    return (
+      <NightInspect code={code} me={me} secret={secret} players={players} settings={settings} />
+    );
+  }
+
+  /* نتيجة الفحص تصل أثناء الليل نفسه، فتُعرض قبل أن يُغلق عينيه */
+  if (view === 'revealed' && secret) {
+    return <NightInspectResult secret={secret} players={players} settings={settings} />;
+  }
+
+  if (view === 'waiting') {
+    return (
+      <div className="night-awake">
+        <WaitingNote>جارٍ كشف الموعد</WaitingNote>
+      </div>
+    );
+  }
+
   return (
     <div className="night-blackout" aria-hidden="true">
       <span className="night-blackout__dot" />
       <p className="sr-only" aria-hidden="false">
         الليل جارٍ. استمع إلى الجهاز الرئيسي ولا تلمس هذا الجهاز.
+      </p>
+    </div>
+  );
+}
+
+/** اختيار الجار أثناء الليل — خياران لا ثالث لهما. */
+function NightInspect({
+  code,
+  me,
+  secret,
+  players,
+  settings,
+}: {
+  code: string;
+  me: PlayerPublic;
+  secret: PlayerSecret;
+  players: PlayerPublic[];
+  settings: RoomSettings;
+}) {
+  const { transport } = useSession();
+  const [error, setError] = useState<string | null>(null);
+  const neighbours = useMemo(() => neighboursOf(me.id, players), [me.id, players]);
+  const byId = useMemo(
+    () => Object.fromEntries(players.map((player) => [player.id, player])),
+    [players],
+  );
+
+  return (
+    <div className="night-awake">
+      <h2>استيقظت وحدك</h2>
+      <p className="lede">
+        اختر أحد جاريك لترى موعد استيقاظه. مرّة واحدة فقط، ولا شيء غير الموعد.
+      </p>
+      <div className="stack">
+        {(['right', 'left'] as const).map((side) => {
+          const target = byId[neighbours[side]];
+          if (!target) return null;
+          return (
+            <PlayerCard
+              key={side}
+              player={target}
+              status={side === 'right' ? 'الجالس عن يمينك' : 'الجالس عن يسارك'}
+              onSelect={async () => {
+                try {
+                  // هذا الجهاز لا يملك موعد الجار: يكتب الطلب، والمضيف يملأ الموعد.
+                  await transport.writeSecret(code, me.id, {
+                    ...secret,
+                    inspection: { targetId: target.id, side, revealedSlot: null },
+                  });
+                  setError(null);
+                } catch (cause) {
+                  setError(cause instanceof Error ? cause.message : 'تعذّر الفحص.');
+                }
+              }}
+            />
+          );
+        })}
+      </div>
+      <p className="eyebrow-note">
+        {settings.slotNaming === 'hours' ? 'ستظهر لك ساعته فقط.' : 'ستظهر لك ليلته فقط.'}
+      </p>
+      {error && (
+        <p role="alert" className="join__error">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function NightInspectResult({
+  secret,
+  players,
+  settings,
+}: {
+  secret: PlayerSecret;
+  players: PlayerPublic[];
+  settings: RoomSettings;
+}) {
+  const target = players.find((player) => player.id === secret.inspection?.targetId);
+  return (
+    <div className="night-awake">
+      <p className="lede">{target?.name}</p>
+      <h2 className="slot-headline">
+        {slotLabel(secret.inspection!.revealedSlot!, settings.slotNaming)}
+      </h2>
+      <p className="eyebrow-note">
+        هذا موعد استيقاظه فقط. لا يخبرك بدوره ولا هل استيقظ فعلًا. احفظه وأغلق عينيك.
       </p>
     </div>
   );
@@ -387,6 +520,7 @@ export function PlayerSecretStage({
   me,
   secret,
   players,
+  settings,
   resolved,
   acked,
 }: {
@@ -394,6 +528,7 @@ export function PlayerSecretStage({
   me: PlayerPublic;
   secret: PlayerSecret | null;
   players: PlayerPublic[];
+  settings: RoomSettings;
   resolved: boolean;
   acked: boolean;
 }) {
@@ -401,14 +536,6 @@ export function PlayerSecretStage({
   const gate = useRevealGate();
   const [picked, setPicked] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
-
-  const neighbours = useMemo(() => {
-    try {
-      return neighboursOf(me.id, players);
-    } catch {
-      return null;
-    }
-  }, [me.id, players]);
 
   const byId = useMemo(
     () => Object.fromEntries(players.map((player) => [player.id, player])),
@@ -564,57 +691,29 @@ export function PlayerSecretStage({
     );
   }
 
-  /* ── فحص الجار ── */
-  if (canInspect(secret, players.length) && neighbours) {
-    if (!gate.revealed) {
-      return (
-        <>
-          <div className="role-cover role-cover--secret" aria-hidden="true">
-            <span>لك معلومة</span>
-          </div>
-          <p className="lede">استيقظت وحدك — تستطيع فحص أحد جاريك.</p>
-          <Button size="xl" full onClick={gate.reveal}>
-            أظهر المعلومة
-          </Button>
-        </>
-      );
-    }
+  /*
+    ── الفحص لم يُستخدم ──
 
+    لا يُعرض المُنتقي هنا. الفحص يقع في لحظة واحدة: وهو مستيقظ في موعده — على
+    جهازه في النمط الرقمي، وبرفع كوب جاره في نمط النرد. تقديم فرصة ثانية بعد
+    انتهاء الليل يجعل النمطين لعبتين مختلفتين، ويمنح من فوّتها ميزة على من
+    استعملها في وقتها.
+  */
+  if (canInspect(secret, players.length)) {
     return (
       <>
-        <h2>افحص جارك</h2>
-        <p className="lede">اختر واحدًا فقط. سيظهر لك موعد استيقاظه، ولا شيء غير ذلك.</p>
-        <div className="stack">
-          {(['right', 'left'] as const).map((side) => {
-            const target = byId[neighbours[side]];
-            if (!target) return null;
-            return (
-              <PlayerCard
-                key={side}
-                player={target}
-                status={side === 'right' ? 'الجالس عن يمينك' : 'الجالس عن يسارك'}
-                onSelect={async () => {
-                  try {
-                    // هذا الجهاز لا يملك موعد الجار ولا يستطيع قراءته.
-                    // يكتب الطلب فقط، والمضيف هو من يملأ الموعد المكشوف.
-                    await transport.writeSecret(code, me.id, {
-                      ...secret,
-                      inspection: { targetId: target.id, side, revealedSlot: null },
-                    });
-                    setError(null);
-                  } catch (cause) {
-                    setError(cause instanceof Error ? cause.message : 'تعذّر الفحص.');
-                  }
-                }}
-              />
-            );
-          })}
+        <div className="role-cover role-cover--empty" aria-hidden="true">
+          <span>لا معلومة</span>
         </div>
-        {error && (
-          <p role="alert" className="join__error">
-            {error}
-          </p>
-        )}
+        <h2>لم تستعمل فحصك</h2>
+        <p className="lede">
+          {settings.diceMode === 'physical'
+            ? 'كان بإمكانك رفع كوب أحد جاريك أثناء استيقاظك.'
+            : 'كان بإمكانك اختيار أحد جاريك أثناء استيقاظك.'}
+        </p>
+        <Button size="xl" full onClick={() => void transport.ack(code, me.id, 'secretAck')}>
+          فهمت
+        </Button>
       </>
     );
   }

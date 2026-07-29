@@ -123,7 +123,9 @@ export function HostScreen() {
 
       const slot = slotOfNightPhase(guard);
       if (slot) {
-        await narrator.say(narrator.script.slotOpen(slot));
+        await narrator.say(
+          narrator.script.slotOpen(slot, settings?.diceMode ?? GAME_CONFIG.defaults.diceMode),
+        );
         if (!still()) return;
         const finished = await runCountdown(
           settings?.nightCountdownSeconds ?? GAME_CONFIG.defaults.nightCountdownSeconds,
@@ -184,6 +186,7 @@ export function HostScreen() {
     playerCount,
     runCountdown,
     settings?.nightCountdownSeconds,
+    settings?.diceMode,
   ]);
 
   /* ── انتقالات مشروطة بجاهزية اللاعبين ── */
@@ -221,6 +224,25 @@ export function HostScreen() {
   playersRef.current = players;
   /** يمنع كتابة `resolved` أكثر من مرة لكل جولة — الحالة القادمة عبر props قد تكون قديمة. */
   const resolvedRoundRef = useRef<string>('');
+
+  /*
+    ── فحص الجار أثناء الليل ──
+
+    في النمط الرقمي يفحص اللاعب جاره وهو مستيقظ في موعده، لا بعد انتهاء الليل:
+    هذا ما يحدث فعلًا في نمط الأكواب (يرفع الكوب وهو مستيقظ)، والنمطان يجب أن
+    يتطابقا في التوقيت وإلّا اختلفت اللعبتان.
+
+    لكن اللاعب لا يستطيع قراءة سر جاره، فيكتب الطلب فارغًا والمضيف يملؤه. لذلك
+    يجب أن يستمع المضيف للأسرار أثناء مراحل الليل أيضًا، لا في المرحلة السرية
+    وحدها كما كان.
+  */
+  useEffect(() => {
+    if (!isHost || !roundId || !phase.startsWith('night-phase-')) return;
+    return transport.watchAllSecrets(code, (secrets) => {
+      if (Object.keys(secrets).length === 0) return;
+      void resolvePendingInspections(transport, code, playersRef.current, secrets);
+    });
+  }, [isHost, phase, roundId, code, transport]);
 
   useEffect(() => {
     if (!isHost || phase !== 'secret-actions' || !roundId) return;

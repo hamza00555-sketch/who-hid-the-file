@@ -11,6 +11,7 @@
  */
 
 import { slotCallLabel, GAME_CONFIG, type SlotNaming } from '../config/game.config';
+import type { DiceMode } from '../game/types';
 
 export interface VoiceLine {
   id: string;
@@ -48,15 +49,27 @@ export function buildScript(naming: SlotNaming = GAME_CONFIG.slotNaming) {
       line('night.start.2', 'الجميع يغلق عينيه الآن.', 2400),
     ],
 
-    /* ── إعلان كل مرحلة ── */
-    slotOpen: (slot: number): VoiceLine[] => [
+    /*
+      ── إعلان كل مرحلة ──
+
+      السطر الأخير يختلف باختلاف طريقة اللعب، لأن الفعل المطلوب نفسه يختلف:
+      في النمط الرقمي المعلومة على الجهاز، وفي نمط النرد والأكواب المعلومة
+      تحت كوب الجار فعلًا. جملة واحدة تخدم النمطين ستكون خاطئة في أحدهما.
+    */
+    slotOpen: (slot: number, diceMode: DiceMode = 'digital'): VoiceLine[] => [
       line(`night.open.${slot}`, `${call(slot)}، افتحوا أعينكم الآن.`, 1400),
       line(`night.hint.${slot}.a`, 'إذا كان معكم أحد مستيقظ، تعرّفوا عليه جيدًا.', 1200),
-      line(
-        `night.hint.${slot}.b`,
-        'وإذا كنتم وحدكم، ستصلكم معلومة بعد انتهاء الليل.',
-        1000,
-      ),
+      diceMode === 'physical'
+        ? line(
+            `night.hint.${slot}.cup`,
+            'وإذا كنتم وحدكم، ارفعوا كوب أحد جاريكم بهدوء، وانظروا إلى نرده، ثم أعيدوه كما كان.',
+            1600,
+          )
+        : line(
+            `night.hint.${slot}.pick`,
+            'وإذا كنتم وحدكم، انظروا إلى جهازكم واختاروا أحد جاريكم.',
+            1400,
+          ),
     ],
 
     slotClose: (slot: number): VoiceLine[] => [

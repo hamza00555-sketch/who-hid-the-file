@@ -77,6 +77,38 @@ export function canInspect(secret: PlayerSecret, playerCount: number): boolean {
   return true;
 }
 
+/**
+ * ماذا تعرض شاشة اللاعب في مرحلة ليلية بعينها.
+ *
+ * القرار منطق لا عرض، فمكانه هنا لا داخل JSX: الفرق بين «إعتام» و«مُنتقٍ»
+ * يحكمه أربعة شروط متداخلة (النمط، الاستيقاظ، الانفراد، الأحقية)، وخطأ في
+ * أيّها يُظهر شاشة مضيئة لنائم — أو يمنع مستيقظًا من معلومته.
+ *
+ * - `blackout` — لا شيء. الجهاز لا يُلمس.
+ * - `pick`     — اختر أحد جاريك (النمط الرقمي وحده).
+ * - `waiting`  — أُرسل الطلب وينتظر المضيف أن يكشف الموعد.
+ * - `revealed` — الموعد ظاهر، احفظه وأغلق عينيك.
+ *
+ * في نمط النرد والأكواب النتيجة `blackout` دائمًا: المعلومة تحت كوب الجار لا
+ * في الجهاز، وإضاءة الشاشة هناك تفضح المستيقظ.
+ */
+export type NightView = 'blackout' | 'pick' | 'waiting' | 'revealed';
+
+export function nightViewFor(
+  secret: PlayerSecret | null,
+  slot: WakeSlot | null,
+  playerCount: number,
+  diceMode: 'digital' | 'physical',
+): NightView {
+  if (diceMode !== 'digital') return 'blackout';
+  if (!secret || slot == null) return 'blackout';
+  if (!secret.soloSlots.includes(slot)) return 'blackout';
+
+  if (secret.inspection?.revealedSlot != null) return 'revealed';
+  if (secret.inspection) return 'waiting';
+  return canInspect(secret, playerCount) ? 'pick' : 'blackout';
+}
+
 /** الجاران المسموح فحصهما — لا أحد غيرهما. */
 export function inspectTargets(
   playerId: string,

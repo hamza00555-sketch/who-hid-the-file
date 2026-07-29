@@ -8,9 +8,11 @@ import {
   performInspection,
   playersAwakeAt,
   shouldWake,
+  nightViewFor,
   witnessesOfHider,
   wokeWith,
 } from '../night';
+import { ALL_SLOTS } from '../types';
 import { neighboursOf, reorderSeats, seatedOrder } from '../seating';
 import { dice, ids, makePlayers } from './helpers';
 
@@ -211,5 +213,71 @@ describe('فحص الجار', () => {
     expect(right.inspection!.targetId).toBe('p2');
     const left = performInspection(secrets.p3!, 'left', players, secrets);
     expect(left.inspection!.targetId).toBe('p4');
+  });
+});
+
+describe('ماذا تعرض شاشة اللاعب في مرحلة ليلية', () => {
+  // p2 وحده في الموعد 2؛ p3 وp4 معًا في الموعد 3.
+  const secrets = build(6, 'p1', {
+    p1: [1],
+    p2: [2],
+    p3: [3],
+    p4: [3],
+    p5: [5],
+    p6: [6],
+  });
+
+  it('المستيقظ وحده يرى المُنتقي في النمط الرقمي', () => {
+    expect(nightViewFor(secrets.p2!, 2, 6, 'digital')).toBe('pick');
+  });
+
+  it('نمط النرد والأكواب لا يضيء شاشة أحد أبدًا', () => {
+    for (const slot of ALL_SLOTS) {
+      for (const secret of Object.values(secrets)) {
+        expect(nightViewFor(secret, slot, 6, 'physical')).toBe('blackout');
+      }
+    }
+  });
+
+  it('من استيقظ مع غيره لا يرى شيئًا — الانفراد شرط لا الاستيقاظ', () => {
+    expect(nightViewFor(secrets.p3!, 3, 6, 'digital')).toBe('blackout');
+    expect(nightViewFor(secrets.p4!, 3, 6, 'digital')).toBe('blackout');
+  });
+
+  it('النائم لا تضيء شاشته في موعد غيره', () => {
+    expect(nightViewFor(secrets.p2!, 5, 6, 'digital')).toBe('blackout');
+    expect(nightViewFor(secrets.p2!, null, 6, 'digital')).toBe('blackout');
+  });
+
+  it('المُخفي لا يفحص أحدًا ولو استيقظ وحده', () => {
+    expect(secrets.p1!.soloSlots).toContain(1);
+    expect(nightViewFor(secrets.p1!, 1, 6, 'digital')).toBe('blackout');
+  });
+
+  it('بعد إرسال الطلب ينتظر، وبعد وصول الموعد يراه', () => {
+    const asked = { ...secrets.p2!, inspection: { targetId: 'p3', side: 'left' as const, revealedSlot: null } };
+    expect(nightViewFor(asked, 2, 6, 'digital')).toBe('waiting');
+
+    const answered = { ...asked, inspection: { ...asked.inspection, revealedSlot: 3 as const } };
+    expect(nightViewFor(answered, 2, 6, 'digital')).toBe('revealed');
+  });
+
+  it('لا فحص ثانٍ: من كشف موعدًا لا يعود إلى المُنتقي', () => {
+    const done = {
+      ...secrets.p2!,
+      inspection: { targetId: 'p3', side: 'left' as const, revealedSlot: 3 as const },
+    };
+    expect(nightViewFor(done, 2, 6, 'digital')).not.toBe('pick');
+  });
+
+  it('بلا سرّ بعد — إعتام لا شاشة فارغة', () => {
+    expect(nightViewFor(null, 2, 6, 'digital')).toBe('blackout');
+  });
+
+  it('عند 4 لاعبين لا فحص إطلاقًا — القاعدة تُغلقه', () => {
+    const four = build(4, 'p1', { p1: [1, 2], p2: [2, 3], p3: [4, 5], p4: [6, 1] });
+    const p3 = chooseSlot(four.p3!, 4);
+    const solo = computeSoloSlots({ ...four, p3 });
+    expect(nightViewFor(solo.p3!, 4, 4, 'digital')).toBe('blackout');
   });
 });
