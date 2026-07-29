@@ -300,6 +300,22 @@ function SettingsPanel({
         </div>
       </fieldset>
 
+      <fieldset className="settings-panel__field">
+        <legend>صوت الراوي</legend>
+        <div className="settings-panel__choices">
+          <Choice
+            checked={settings.narratorVoice === 'male'}
+            onChange={() => onChange({ narratorVoice: 'male' })}
+            title="صوت رجل"
+          />
+          <Choice
+            checked={settings.narratorVoice === 'female'}
+            onChange={() => onChange({ narratorVoice: 'female' })}
+            title="صوت امرأة"
+          />
+        </div>
+      </fieldset>
+
       <label className="settings-panel__row">
         <span>مدة العد التنازلي في كل مرحلة</span>
         <input

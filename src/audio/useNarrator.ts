@@ -6,22 +6,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SlotNaming } from '../config/game.config';
 import { audioManager, AudioManager } from './AudioManager';
+import type { NarratorVoice } from '../game/types';
 import { buildScript, type VoiceLine } from './script.ar';
 
 export function useNarrator(options: {
   enabled: boolean;
   rate: number;
   naming: SlotNaming;
+  voice: NarratorVoice;
 }) {
-  const { enabled, rate, naming } = options;
+  const { enabled, rate, naming, voice } = options;
   const [caption, setCaption] = useState<string | null>(null);
   const lastLines = useRef<VoiceLine[]>([]);
 
   const script = useMemo(() => buildScript(naming), [naming]);
 
   useEffect(() => {
-    audioManager.configure({ enabled, rate });
-  }, [enabled, rate]);
+    audioManager.configure({ enabled, rate, voice });
+  }, [enabled, rate, voice]);
 
   useEffect(() => audioManager.onCaption(setCaption), []);
 

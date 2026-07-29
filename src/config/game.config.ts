@@ -47,6 +47,7 @@ export const GAME_CONFIG = {
     nightStageLeadInSeconds: 4,
     discussionSeconds: 180,
     voiceEnabled: true,
+    narratorVoice: 'male' as 'male' | 'female',
     ttsRate: 0.82,
   },
 

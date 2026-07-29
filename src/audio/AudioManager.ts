@@ -11,6 +11,7 @@
  */
 
 import { GAME_CONFIG } from '../config/game.config';
+import type { NarratorVoice } from '../game/types';
 import type { VoiceLine } from './script.ar';
 
 type CaptionListener = (caption: string | null) => void;
@@ -19,6 +20,8 @@ export interface AudioSettings {
   enabled: boolean;
   rate: number;
   volume: number;
+  /** أي راوٍ مسجَّل يُستعمل — يحدّد المجلّد تحت `public/audio/` */
+  voice: NarratorVoice;
 }
 
 export class AudioManager {
@@ -28,7 +31,7 @@ export class AudioManager {
   private captionListeners = new Set<CaptionListener>();
   private currentAudio: HTMLAudioElement | null = null;
   private availableFiles = new Map<string, boolean>();
-  private settings: AudioSettings = { enabled: true, rate: 0.82, volume: 1 };
+  private settings: AudioSettings = { enabled: true, rate: 0.82, volume: 1, voice: 'male' };
 
   /** هل يوجد أي محرك نطق أصلًا؟ تُستخدم لعرض تحذير للمضيف. */
   static ttsAvailable(): boolean {
@@ -90,11 +93,24 @@ export class AudioManager {
   private async speakLine(line: VoiceLine): Promise<void> {
     if (!this.settings.enabled) return;
 
-    if (GAME_CONFIG.hasRecordedVoice && line.audioSrc && (await this.hasFile(line.audioSrc))) {
-      await this.playFile(line.audioSrc);
+    const src = this.srcFor(line);
+    if (src && (await this.hasFile(src))) {
+      await this.playFile(src);
       return;
     }
     await this.speakTts(line.text);
+  }
+
+  /**
+   * مسار الجملة المسجّلة للصوت المختار حاليًا.
+   *
+   * الصوت جزء من المسار لا من الجملة، فتبديل الراوي في الإعدادات يبدّل
+   * المجلّد وحده. و`availableFiles` مفتاحه المسار الكامل، فلا يتسرّب فحص
+   * صوت إلى صوت آخر.
+   */
+  private srcFor(line: VoiceLine): string | null {
+    if (!GAME_CONFIG.hasRecordedVoice || !line.audioSrc) return null;
+    return `/audio/${this.settings.voice}/${line.audioSrc}`;
   }
 
   private async hasFile(src: string): Promise<boolean> {

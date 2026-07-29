@@ -22,8 +22,13 @@ export interface VoiceLine {
   audioSrc?: string;
 }
 
+/**
+ * `audioSrc` بلا مجلّد الصوت عمدًا: النصّ لا يعرف أي راوٍ اختاره المضيف، وهذا
+ * إعداد غرفة يتغيّر بين جولة وأخرى. المدير هو من يركّب المسار الكامل عند
+ * النطق (`/audio/{voice}/{id}.mp3`) — فلا يُعاد بناء النصّ كلّه لتبديل صوت.
+ */
 function line(id: string, text: string, pauseAfter = 700): VoiceLine {
-  return { id, text, pauseAfter, audioSrc: `/audio/${id}.mp3` };
+  return { id, text, pauseAfter, audioSrc: `${id}.mp3` };
 }
 
 export function buildScript(naming: SlotNaming = GAME_CONFIG.slotNaming) {

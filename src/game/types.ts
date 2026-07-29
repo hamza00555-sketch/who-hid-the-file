@@ -113,6 +113,9 @@ export interface PlayerSecret {
   becameAccomplice: boolean;
 }
 
+/** صوت الراوي — يختاره المضيف، ويحدّد مجلّد الجمل المسجّلة. */
+export type NarratorVoice = 'male' | 'female';
+
 export interface RoomSettings {
   gameName: string;
   diceMode: DiceMode;
@@ -120,6 +123,7 @@ export interface RoomSettings {
   nightCountdownSeconds: number;
   discussionSeconds: number;
   voiceEnabled: boolean;
+  narratorVoice: NarratorVoice;
   ttsRate: number;
 }
 

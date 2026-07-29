@@ -71,6 +71,7 @@ export function HostScreen() {
     enabled: settings?.voiceEnabled ?? true,
     rate: settings?.ttsRate ?? GAME_CONFIG.defaults.ttsRate,
     naming: settings?.slotNaming ?? GAME_CONFIG.slotNaming,
+    voice: settings?.narratorVoice ?? GAME_CONFIG.defaults.narratorVoice,
   });
 
   const [countdown, setCountdown] = useState<{ value: number; total: number } | null>(null);
