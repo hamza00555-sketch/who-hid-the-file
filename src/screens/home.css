@@ -10,8 +10,13 @@
 }
 
 /*
-  البطل صورة عريضة خلفيتها بلون `--night-deep` نفسه، فتذوب في الصفحة بلا حدّ.
-  القناع السفلي يخفي أي فرق ضئيل بين كحلي الصورة وكحلي الصفحة.
+  البطل صورة عريضة كحليّة قريبة من كحلي الصفحة — لكن «قريب» لا يكفي: القياس
+  أعطى أركان الصورة #030f27 مقابل خلفية أغمق منها قليلًا، والفرق يرسم مستطيلًا
+  ظاهرًا يجعل الرسم يبدو ملصوقًا لا جزءًا من المشهد.
+
+  لذلك يُقنَّع على الجهات الأربع لا على الأسفل وحده: تذويب سفلي طويل يسلّم
+  المشهد إلى العنوان، وتذويب جانبي وعلوي قصير يمحو الحدّ. `mask-composite`
+  يقاطع القناعين فيبقى المركز مصمتًا كاملًا.
 */
 .home__hero {
   width: 100%;
@@ -23,7 +28,11 @@
   width: 100%;
   height: auto;
   display: block;
-  mask-image: linear-gradient(to bottom, #000 76%, transparent 100%);
+  mask-image:
+    linear-gradient(to bottom, transparent 0%, #000 14%, #000 74%, transparent 100%),
+    linear-gradient(to right, transparent 0%, #000 9%, #000 91%, transparent 100%);
+  mask-composite: intersect;
+  -webkit-mask-composite: source-in;
 }
 
 /* المسرح: الشخصيات والملف — تكوين واحد لا شبكة بطاقات */
@@ -133,16 +142,57 @@
   color: var(--amber);
 }
 
+/*
+  بطاقة الاستئناف: الخزنة على الحافة البادئة والنص والأزرار بجانبها. الصفّ
+  أفقي دائمًا — الخزنة صغيرة بما يكفي (5rem) ألّا تزاحم النص حتى على 320px،
+  وتكديسها رأسيًا كان سيدفع الأزرار خارج الطيّة على الجوال.
+*/
 .home__resume {
   max-width: 26rem;
   display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.home__resume-art {
+  flex: none;
+  width: clamp(4.5rem, 19vw, 6.5rem);
+  height: auto;
+  align-self: flex-end;
+  /* الرسم مقصوص بخلفية شفافة، فيحتاج ظلًّا أرضيًّا ليجلس لا ليطفو */
+  filter: drop-shadow(0 4px 6px oklch(0.1 0.04 265 / 0.55));
+}
+
+/*
+  زرّا البطاقة يتقاسمان ما تبقّى بعد الخزنة. بمقاسهما الافتراضي كان مجموعهما
+  يتجاوز العرض المتاح فينكسر «تجاهل» إلى سطر ثانٍ — والزرّان المتراكبان
+  رأسيًا يوحيان بأن أحدهما أهم. التضييق أفقي فقط: `min-height` لم يُمسّ فيبقى
+  هدف اللمس 44px كاملًا.
+*/
+.home__resume .btn {
+  padding-inline: var(--s-3);
+  font-size: 0.95rem;
+}
+
+.home__resume-text {
+  flex: 1 1 auto;
+  display: flex;
   flex-direction: column;
   gap: var(--s-3);
-  align-items: center;
+  min-width: 0;
 }
 
 .home__resume p {
   margin: 0;
+}
+
+/* الرمز لاتيني داخل جملة عربية: العزل يمنع انقلاب ترتيب حروفه */
+.home__resume-code {
+  unicode-bidi: isolate;
+  font-family: var(--font-display);
+  color: var(--amber);
+  letter-spacing: 0.12em;
 }
 
 .home__error {

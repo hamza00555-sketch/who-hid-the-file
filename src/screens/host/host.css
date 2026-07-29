@@ -121,12 +121,49 @@
   color: oklch(0.2 0.04 230);
 }
 
+/*
+  ── مسرح الانضمام ──
+  الشخصيتان فوق البطاقة لا خلفها: أيديهما تشير لأسفل، فلا بدّ أن تقعا على
+  البطاقة نفسها ليقرأ العين «تتّكئان عليها».
+
+  `padding-top` بنسبة مئوية — والنسبة في الحشو تُقاس من العرض دائمًا — فيتناسب
+  ارتفاع الفراغ مع ارتفاع الرسم (نسبة 1086:420) تلقائيًا على كل عرض شاشة، بلا
+  استعلامات وسائط ولا أرقام سحرية تنكسر عند مقاس لم يُختبر.
+*/
+.join-stage {
+  position: relative;
+  width: 100%;
+  padding-top: 27%;
+}
+
+.join-stage__peekers {
+  position: absolute;
+  top: 0;
+  inset-inline: 0;
+  width: 100%;
+  height: auto;
+  z-index: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 10px oklch(0.1 0.04 265 / 0.5));
+}
+
+/*
+  حشو علوي إضافي بقدر ما يتجاوزه الرسم داخل البطاقة (٣٨٫٦٪ − ٢٩٪ من العرض).
+
+  ليس تجميلًا: القياس أظهر أن أيدي الشخصيتين تغطّي ٣٦٪ من الشريط العلوي لرمز
+  الـQR بوحدات صلبة لا شفافة — ورمز QR مغطًّى جزئيًا لا يُمسح. النسبة المئوية
+  في الحشو تُقاس من العرض نفسه الذي يُقاس منه ارتفاع الرسم، فتبقى المسافة
+  محفوظة على كل عرض شاشة بلا استثناءات.
+*/
 .join-panel {
+  position: relative;
+  z-index: 0;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-areas: 'qr text' 'hint hint';
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'text qr' 'hint hint';
   gap: var(--s-4) var(--s-5);
   align-items: center;
+  padding-top: calc(9.6% + var(--s-3));
 }
 
 .join-panel__qr {
@@ -356,6 +393,16 @@
   color: var(--coral);
 }
 
+/* المقعد الفارغ: ظلّ منقّط بحجم الحبّة نفسه فتصطفّ الحبّات على خطّ واحد */
+.lobby__roster li[data-state='empty'] {
+  padding: 0.25em 0.5em;
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--night-edge);
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+
 .lobby__blockers {
   list-style: none;
   padding: 0;
@@ -427,9 +474,20 @@
 
   /* الرمز هو البطل على الجوال، والـ QR مرافق له لا العكس */
   .join-panel {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: var(--s-3);
     padding: var(--s-3);
+    /* الحشو المختصر أعلاه يمسح خلوص الأيدي — يُعاد هنا صراحةً */
+    padding-top: calc(9.6% + var(--s-3));
+  }
+
+  /*
+    الرسم يبقى بعرض البطاقة تمامًا على الجوال. تكبيره خارج حدودها كان يقصّ
+    كتف الشخصية اليمنى عند حافة الشاشة — والقياس أثبت أن الوجوه تُقرأ بوضوح
+    عند 358px، فلا مقابل يوازي القصّ.
+  */
+  .join-stage {
+    padding-top: 29%;
   }
 
   .join-panel__qr img {

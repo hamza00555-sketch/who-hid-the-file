@@ -130,22 +130,7 @@ export function HostLobbyStage({
           />
         </div>
 
-        <ul className="lobby__roster">
-          {players.map((player, index) => (
-            <li
-              key={player.id}
-              data-state={
-                !player.connected ? 'offline' : player.ready ? 'ready' : 'waiting'
-              }
-            >
-              <b aria-hidden="true">{index + 1}</b>
-              {player.name}
-              <span aria-hidden="true">
-                {!player.connected ? '⚡' : player.ready ? '✓' : '…'}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <RosterStrip players={players} />
       </aside>
 
       <div className="lobby__bar">
@@ -163,6 +148,60 @@ export function HostLobbyStage({
         </Button>
       </div>
     </div>
+  );
+}
+
+/**
+ * قائمة اللاعبين + مقاعد فارغة منقّطة تكمل الحدّ الأدنى.
+ *
+ * القائمة الفارغة كانت تترك فراغًا صامتًا لا يقول للمضيف كم ينقصه. الظلال
+ * المنقّطة تجعل «العدد الناقص» شيئًا يُرى لا رقمًا يُحسب — وتختفي من تلقاء
+ * نفسها حين يكتمل الحدّ الأدنى، فلا تتحوّل إلى ضجيج بعد اكتمال العدد.
+ */
+function RosterStrip({ players }: { players: PlayerPublic[] }) {
+  const missing = Math.max(0, GAME_CONFIG.players.min - players.length);
+
+  return (
+    <ul className="lobby__roster">
+      {players.map((player, index) => (
+        <li
+          key={player.id}
+          data-state={!player.connected ? 'offline' : player.ready ? 'ready' : 'waiting'}
+        >
+          <b aria-hidden="true">{index + 1}</b>
+          {player.name}
+          <span aria-hidden="true">
+            {!player.connected ? '⚡' : player.ready ? '✓' : '…'}
+          </span>
+        </li>
+      ))}
+
+      {/*
+        المقاعد الفارغة تمثيل بصري لرقم يُنطق كاملًا في شريط البدء أسفل
+        الشاشة، فتُخفى عن القارئ الصوتي بدل أن تُقرأ ثمانِ مرات بلا معنى.
+      */}
+      {Array.from({ length: missing }, (_, index) => (
+        <li key={`empty-${index}`} data-state="empty" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle
+              cx="12"
+              cy="8"
+              r="3.6"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeDasharray="3 2.6"
+            />
+            <path
+              d="M4.6 20a7.4 7.4 0 0114.8 0"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeDasharray="3 2.6"
+            />
+          </svg>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -188,23 +227,31 @@ function JoinPanel({ code, joinUrl }: { code: string; joinUrl: string }) {
   }
 
   return (
-    <Panel tone="paper" className="join-panel">
-      <div className="join-panel__qr">
-        {qr ? (
-          <img src={qr} alt={`رمز QR للانضمام إلى الجلسة ${code}`} />
-        ) : (
-          <WaitingNote>جارٍ توليد رمز QR</WaitingNote>
-        )}
-      </div>
-      <div className="join-panel__text">
-        <p className="join-panel__label">امسحوا الرمز أو اكتبوا</p>
-        <p className="join-panel__code">{code}</p>
-        <p className="join-panel__url">{joinUrl}</p>
-      </div>
-      <p className="join-panel__hint">
-        كل لاعب يفتح الرابط على جهازه، يكتب اسمه، يختار شخصيته، ثم يضغط «أنا جاهز».
-      </p>
-    </Panel>
+    /*
+      الشخصيتان تتّكئان على الحافة العليا للبطاقة وتشيران إلى الرمز. الرسم
+      ليس زينة: البطاقة البيضاء وحدها لا تقول لمن هي، والإشارة لأسفل توجّه
+      نظر من حول الطاولة إلى الرمز قبل قراءة أي كلمة.
+    */
+    <div className="join-stage">
+      <img className="join-stage__peekers" src="/ui/lobby-peekers.png" alt="" aria-hidden="true" />
+      <Panel tone="paper" className="join-panel">
+        <div className="join-panel__text">
+          <p className="join-panel__label">امسحوا الرمز أو اكتبوا</p>
+          <p className="join-panel__code">{code}</p>
+          <p className="join-panel__url">{joinUrl}</p>
+        </div>
+        <div className="join-panel__qr">
+          {qr ? (
+            <img src={qr} alt={`رمز QR للانضمام إلى الجلسة ${code}`} />
+          ) : (
+            <WaitingNote>جارٍ توليد رمز QR</WaitingNote>
+          )}
+        </div>
+        <p className="join-panel__hint">
+          كل لاعب يفتح الرابط على جهازه، يكتب اسمه، يختار شخصيته، ثم يضغط «أنا جاهز».
+        </p>
+      </Panel>
+    </div>
   );
 }
 

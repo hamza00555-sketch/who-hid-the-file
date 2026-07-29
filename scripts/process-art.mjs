@@ -4,7 +4,11 @@
  * الأصول تُولَّد على خلفية رمادية مسطحة (#808080) عمدًا، فيمكن إزالتها محليًا
  * بدقة وبلا تكلفة بدل استدعاء خدمة إزالة خلفية لكل صورة.
  *
- *   node scripts/process-art.mjs <input.png> <output.png> [--height=600]
+ *   node scripts/process-art.mjs <input.png> <output.png> [--height=600] [--keep-all]
+ *
+ * `--keep-all` يوقف مرشّح «أكبر شكل متصل». يلزم للأصول التي فيها أكثر من شكل
+ * منفصل عمدًا — شخصيتان متباعدتان، أو خزنة بجانبها نبتة — وإلا حُذف كل ما
+ * عدا الأكبر. الافتراضي يبقى مفعّلًا لأنه ما تحتاجه أوراق الشخصيات.
  */
 
 import sharp from 'sharp';
@@ -134,11 +138,16 @@ export async function cutout(inputPath, outputPath, { height = 600, largestOnly 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const [input, output, ...flags] = process.argv.slice(2);
   if (!input || !output) {
-    console.error('الاستخدام: node scripts/process-art.mjs <input.png> <output.png> [--height=600]');
+    console.error(
+      'الاستخدام: node scripts/process-art.mjs <input.png> <output.png> [--height=600] [--keep-all]',
+    );
     process.exit(1);
   }
   const heightFlag = flags.find((flag) => flag.startsWith('--height='));
   const height = heightFlag ? Number(heightFlag.split('=')[1]) : 600;
-  const result = await cutout(input, output, { height });
+  const result = await cutout(input, output, {
+    height,
+    largestOnly: !flags.includes('--keep-all'),
+  });
   console.log(`${output} — ${result.width}x${result.height}`);
 }

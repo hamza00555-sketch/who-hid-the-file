@@ -11,6 +11,9 @@
 | العناصر | 2 (الملف، مكانه الفارغ) | `public/props/` |
 | النرد | 6 وجوه | `public/props/dice/{1..6}.png` |
 | المشاهد | 4 (مساء، ليل، ليل عميق، فجر) | `public/scenes/{tone}.webp` |
+| بطل الشاشة الرئيسية | 1 | `public/scenes/home-hero.webp` |
+| رسوم الواجهة | 2 (المتّكئان، الخزنة) | `public/ui/` |
+| أيقونة التطبيق | 6 مقاسات | `public/icons/` |
 
 **خط الإنتاج** — ثلاث خطوات، كلها في `scripts/`:
 
@@ -27,6 +30,18 @@
 ```bash
 node scripts/slice-sheet.mjs <sheet.png> <characterId>
 ```
+
+**رسوم الواجهة** ليست أوراق نماذج، فتمرّ على `process-art.mjs` مباشرةً. وهي
+تحتوي عمدًا على أكثر من شكل منفصل (شخصيتان متباعدتان، خزنة بجانبها نبتة) فيجب
+تعطيل مرشّح «أكبر شكل متصل» وإلا حُذف كل ما عدا الأكبر:
+
+```bash
+node scripts/process-art.mjs art/lobby-peekers-raw.png public/ui/lobby-peekers.png --height=420 --keep-all
+node scripts/process-art.mjs art/vault-raw.png          public/ui/vault.png        --height=320 --keep-all
+```
+
+بطل الشاشة الرئيسية مشهد كامل بخلفيته لا قصاصة، فيُحوَّل إلى webp مباشرةً بلا
+إزالة خلفية — والقناع في `home.css` هو ما يذيب حوافه في الصفحة.
 
 **التحقق البصري:** افتح `#/roster` — 10 شخصيات × 9 حالات في شاشة واحدة.
 وجوه النرد رُوجعت يدويًا للتأكد من صحة عدد النقاط في كل وجه.

@@ -144,32 +144,44 @@ export function Home() {
 
         {previous && (
           <Panel tone="night" className="home__resume">
-            <p>
-              لديك جلسة سابقة بالرمز <strong>{previous.code}</strong>.
-            </p>
-            <div className="row">
-              <Button
-                tone="quiet"
-                onClick={() =>
-                  navigate(
-                    previous.role === 'host'
-                      ? `/host/${previous.code}`
-                      : `/play/${previous.code}`,
-                  )
-                }
-              >
-                استئناف
-              </Button>
-              <Button
-                tone="ghost"
-                onClick={() => {
-                  forgetSession();
-                  setPrevious(null);
-                }}
-              >
-                تجاهل
-              </Button>
+            <div className="home__resume-text">
+              <p>
+                لديك جلسة سابقة بالرمز{' '}
+                <strong dir="ltr" className="home__resume-code">
+                  {previous.code}
+                </strong>
+              </p>
+              <div className="row">
+                <Button
+                  tone="quiet"
+                  onClick={() =>
+                    navigate(
+                      previous.role === 'host'
+                        ? `/host/${previous.code}`
+                        : `/play/${previous.code}`,
+                    )
+                  }
+                >
+                  استئناف
+                </Button>
+                <Button
+                  tone="ghost"
+                  onClick={() => {
+                    forgetSession();
+                    setPrevious(null);
+                  }}
+                >
+                  تجاهل
+                </Button>
+              </div>
             </div>
+            {/*
+              الخزنة ليست زينة: الجلسة السابقة «محفوظة» لا جارية، والخزنة تقول
+              ذلك قبل قراءة السطر. تأتي بعد النص في الـ DOM فتقع على الحافة
+              النهائية في اتجاه RTL — أي بعيدًا عن حيث تبدأ العين القراءة.
+              `aria-hidden` لأن النص يقول المعنى كاملًا.
+            */}
+            <img className="home__resume-art" src="/ui/vault.png" alt="" aria-hidden="true" />
           </Panel>
         )}
 
