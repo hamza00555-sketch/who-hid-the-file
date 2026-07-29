@@ -281,3 +281,36 @@ describe('ماذا تعرض شاشة اللاعب في مرحلة ليلية', (
     expect(nightViewFor(solo.p3!, 4, 4, 'digital')).toBe('blackout');
   });
 });
+
+/*
+  الجهاز الرئيسي يعرض شاشة الراوي للطاولة. `PlayerNightStage` في حالة الإعتام
+  يرسم صندوقًا أسود بارتفاع الشاشة كاملة — صحيح على جهاز اللاعب المقلوب،
+  وكارثة على جهاز المضيف: يبتلع المرحلة والعدّ التنازلي فيرى المضيف سوادًا.
+
+  الحارس هو `nightViewFor`: ما دام يعيد `blackout` لكل من لا فعل له، تستطيع
+  شاشة المضيف أن تسأله أولًا ولا ترسم شيئًا. هذه الحالات هي ما يجب أن يبقى
+  `blackout` مهما تغيّر ما حولها.
+*/
+describe('ما لا يجوز أن يرسم شيئًا على شاشة المضيف', () => {
+  const secrets = build(6, 'p1', { p1: [1], p2: [2], p3: [3], p4: [3], p5: [5], p6: [6] });
+
+  it('النائم في موعد غيره', () => {
+    expect(nightViewFor(secrets.p2!, 4, 6, 'digital')).toBe('blackout');
+  });
+
+  it('المستيقظ مع غيره', () => {
+    expect(nightViewFor(secrets.p3!, 3, 6, 'digital')).toBe('blackout');
+  });
+
+  it('المُخفي ولو انفرد', () => {
+    expect(nightViewFor(secrets.p1!, 1, 6, 'digital')).toBe('blackout');
+  });
+
+  it('نمط النرد والأكواب مهما كانت الحالة', () => {
+    expect(nightViewFor(secrets.p2!, 2, 6, 'physical')).toBe('blackout');
+  });
+
+  it('قبل وصول السرّ', () => {
+    expect(nightViewFor(null, 2, 6, 'digital')).toBe('blackout');
+  });
+});

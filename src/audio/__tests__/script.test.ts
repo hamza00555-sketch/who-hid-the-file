@@ -40,6 +40,17 @@ describe('تعليمة الاستيقاظ تتبع طريقة اللعب', () =>
     expect(text).not.toContain('كوب');
   });
 
+  it('لعبة الأربعة: لا يَعِد الراوي بفحص لا وجود له', () => {
+    for (const mode of ['digital', 'physical'] as DiceMode[]) {
+      const text = script.slotOpen(3, mode, false).map((line) => line.text).join(' ');
+      expect(text).not.toContain('وحدكم');
+      expect(text).not.toContain('كوب');
+      expect(text).not.toContain('جاريكم');
+      // الجملتان الأوليان تبقيان: الاستيقاظ والتعرّف على من معك
+      expect(script.slotOpen(3, mode, false)).toHaveLength(2);
+    }
+  });
+
   it('الافتراضي رقمي — النمط الافتراضي في الإعدادات', () => {
     expect(script.slotOpen(3).map((line) => line.text)).toEqual(
       script.slotOpen(3, 'digital').map((line) => line.text),

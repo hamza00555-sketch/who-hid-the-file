@@ -20,7 +20,7 @@ import {
 } from '../../game/director';
 import { planAccomplices } from '../../game/accomplice';
 import { reorderSeats } from '../../game/seating';
-import { isSupportedPlayerCount } from '../../game/rules';
+import { isSupportedPlayerCount, rulesFor } from '../../game/rules';
 import { slotOfNightPhase, type Phase } from '../../game/types';
 import { forgetSession, useRoom, useSecret, useSession } from '../../net/session';
 import { SceneBackdrop, type SceneTone } from '../../ui/components/SceneBackdrop';
@@ -127,7 +127,11 @@ export function HostScreen() {
       const slot = slotOfNightPhase(guard);
       if (slot) {
         await narrator.say(
-          narrator.script.slotOpen(slot, settings?.diceMode ?? GAME_CONFIG.defaults.diceMode),
+          narrator.script.slotOpen(
+            slot,
+            settings?.diceMode ?? GAME_CONFIG.defaults.diceMode,
+            rulesFor(playerCount).inspectionEnabled,
+          ),
         );
         if (!still()) return;
         const finished = await runCountdown(

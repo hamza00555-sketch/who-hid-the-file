@@ -61,7 +61,11 @@ export function buildScript(naming: SlotNaming = GAME_CONFIG.slotNaming) {
       في النمط الرقمي المعلومة على الجهاز، وفي نمط النرد والأكواب المعلومة
       تحت كوب الجار فعلًا. جملة واحدة تخدم النمطين ستكون خاطئة في أحدهما.
     */
-    slotOpen: (slot: number, diceMode: DiceMode = 'digital'): VoiceLine[] => [
+    slotOpen: (
+      slot: number,
+      diceMode: DiceMode = 'digital',
+      inspectionEnabled = true,
+    ): VoiceLine[] => [
       /*
         المصطلح داخل المعرّف لأنه داخل النصّ: هذه الجملة وحدها تنطق «الليلة
         الأولى» أو «الساعة الواحدة» حسب إعداد الغرفة. ومعرّف واحد لنصّين
@@ -71,17 +75,26 @@ export function buildScript(naming: SlotNaming = GAME_CONFIG.slotNaming) {
       */
       line(`night.open.${naming}.${slot}`, `${call(slot)}، افتحوا أعينكم الآن.`, 1400),
       line(`night.hint.${slot}.a`, 'إذا كان معكم أحد مستيقظ، تعرّفوا عليه جيدًا.', 1200),
-      diceMode === 'physical'
-        ? line(
-            `night.hint.${slot}.cup`,
-            'وإذا كنتم وحدكم، ارفعوا كوب أحد جاريكم بهدوء، وانظروا إلى نرده، ثم أعيدوه كما كان.',
-            1600,
-          )
-        : line(
-            `night.hint.${slot}.pick`,
-            'وإذا كنتم وحدكم، انظروا إلى جهازكم واختاروا أحد جاريكم.',
-            1400,
-          ),
+      /*
+        الجملة الثالثة تَعِد بالفحص — ولعبة الأربعة لا فحص فيها إطلاقًا
+        (GAME_RULES §5). قولها هناك يجعل الراوي يَعِد بشيء لن يصل: ينتظر
+        اللاعب شاشة لا تظهر فيظنّ اللعبة معطّلة. تُحذف كاملة لا تُبدَّل.
+      */
+      ...(inspectionEnabled
+        ? [
+            diceMode === 'physical'
+              ? line(
+                  `night.hint.${slot}.cup`,
+                  'وإذا كنتم وحدكم، ارفعوا كوب أحد جاريكم بهدوء، وانظروا إلى نرده، ثم أعيدوه كما كان.',
+                  1600,
+                )
+              : line(
+                  `night.hint.${slot}.pick`,
+                  'وإذا كنتم وحدكم، انظروا إلى جهازكم واختاروا أحد جاريكم.',
+                  1400,
+                ),
+          ]
+        : []),
     ],
 
     slotClose: (slot: number): VoiceLine[] => [

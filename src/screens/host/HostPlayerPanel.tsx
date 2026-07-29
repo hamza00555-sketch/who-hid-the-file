@@ -9,6 +9,7 @@
  * تعديل، وتُنتج لعبتين مختلفتين على طاولة واحدة.
  */
 
+import { nightViewFor } from '../../game/night';
 import type { Phase, PlayerProgress, PlayerPublic, PlayerSecret, RoomSettings, WakeSlot } from '../../game/types';
 import { useSession } from '../../net/session';
 import {
@@ -70,6 +71,18 @@ export function HostPlayerPanel({
     }
 
     if (isNight) {
+      /*
+        الإعتام لا يُرسم على الجهاز الرئيسي إطلاقًا.
+
+        `PlayerNightStage` يعيد في حالة الإعتام صندوقًا أسود بارتفاع `100dvh` —
+        وهو صحيح على جهاز اللاعب (الجهاز مقلوب ولا يُلمس)، وكارثة هنا: يبتلع
+        شاشة الراوي كاملة فيرى المضيف والطاولة سوادًا بدل المرحلة والعدّ
+        التنازلي.
+
+        فيُسأل القرار أولًا، ولا يُرسم شيء إلا إن كان للمضيف فعل فعليّ.
+      */
+      const view = nightViewFor(secret, nightSlot, players.length, settings.diceMode);
+      if (view === 'blackout') return null;
       return (
         <PlayerNightStage
           code={code}
