@@ -159,6 +159,21 @@ export function useSecret(code: string | null): PlayerSecret | null {
   return secret;
 }
 
+/**
+ * يُبقي حضور اللاعب حيًّا ما دام على شاشة الجلسة.
+ *
+ * يجب أن يعيش طوال وجوده في الغرفة لا لحظة الانضمام فقط: حارس الانقطاع على
+ * الخادم يُستهلَك عند تنفيذه، فمن غير إعادة تسليح يبقى اللاعب «منقطعًا» بعد
+ * أول خروج من التطبيق ولو رجع فورًا.
+ */
+export function usePresence(code: string | null, playerId: string | null): void {
+  const { transport: instance } = useSession();
+  useEffect(() => {
+    if (!code || !playerId) return;
+    return instance.watchPresence(code, playerId);
+  }, [code, playerId, instance]);
+}
+
 /** إخفاء السر بلمسة واعية — لا يُعرض تلقائيًا بعد إعادة الاتصال. */
 export function useRevealGate(): { revealed: boolean; reveal: () => void; hide: () => void } {
   const [revealed, setRevealed] = useState(false);

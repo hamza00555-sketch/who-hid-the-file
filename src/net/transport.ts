@@ -52,6 +52,15 @@ export interface RoomTransport {
   watchRoom(code: string, onChange: (state: RoomState | null) => void): () => void;
   watchConnection(onChange: (status: ConnectionStatus) => void): () => void;
 
+  /**
+   * يُبقي حضور اللاعب حيًّا ما دام في الغرفة.
+   *
+   * يعمل ما دام الاشتراك قائمًا، لا مرّة واحدة عند الانضمام: حارس الانقطاع
+   * على الخادم **يُستهلَك عند تنفيذه**، فبعد أول انقطاع لا يبقى حارس ولا أحد
+   * يُعيد الحالة إلى «متصل» — ويظلّ اللاعب منقطعًا إلى الأبد وإن عاد.
+   */
+  watchPresence(code: string, playerId: string): () => void;
+
   /** 🔒 مسار سري: يُسمح بقراءته لصاحبه فقط. */
   watchSecret(
     code: string,

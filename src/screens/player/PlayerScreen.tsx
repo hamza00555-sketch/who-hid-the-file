@@ -10,7 +10,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { GAME_CONFIG } from '../../config/game.config';
 import { availableCharacters, ROSTER } from '../../game/roster';
 import { slotOfNightPhase } from '../../game/types';
-import { forgetSession, rememberSession, useRoom, useSecret, useSession } from '../../net/session';
+import { forgetSession, rememberSession, usePresence, useRoom, useSecret, useSession } from '../../net/session';
 import { TransportError } from '../../net/transport';
 import { isFirebaseConfigured } from '../../net/env';
 import { LocalModeNotice } from '../../ui/components/LocalModeNotice';
@@ -35,6 +35,9 @@ export function PlayerScreen() {
   const { transport, playerId, ready } = useSession();
   const { state, players, me, connection, loading, missing } = useRoom(code);
   const secret = useSecret(code);
+
+  // الحضور يُجدَّد ما دام اللاعب هنا، لا عند الانضمام وحده
+  usePresence(code, me ? playerId : null);
 
   const phase = state?.meta.phase ?? 'lobby';
   const isNight = phase.startsWith('night-');

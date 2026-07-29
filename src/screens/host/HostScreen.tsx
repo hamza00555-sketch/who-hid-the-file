@@ -22,7 +22,7 @@ import { planAccomplices } from '../../game/accomplice';
 import { reorderSeats } from '../../game/seating';
 import { isSupportedPlayerCount, rulesFor } from '../../game/rules';
 import { slotOfNightPhase, type Phase } from '../../game/types';
-import { forgetSession, useRoom, useSecret, useSession } from '../../net/session';
+import { forgetSession, usePresence, useRoom, useSecret, useSession } from '../../net/session';
 import { SceneBackdrop, type SceneTone } from '../../ui/components/SceneBackdrop';
 import { Badge, Button, ExitButton, WaitingNote } from '../../ui/components/kit';
 import { HostPlayerPanel } from './HostPlayerPanel';
@@ -65,6 +65,9 @@ export function HostScreen() {
   const { transport, playerId } = useSession();
   const { state, players, me, isHost, playerCount, connection, loading, missing } = useRoom(code);
   const secret = useSecret(code);
+
+  // المضيف حين يلعب لاعبٌ أيضًا، فحضوره يُجدَّد مثل الجميع
+  usePresence(code, me ? playerId : null);
 
   const phase = state?.meta.phase ?? 'lobby';
   const roundId = state?.meta.roundId ?? '';

@@ -210,6 +210,25 @@ export class LocalTransport implements RoomTransport {
     });
   }
 
+  /**
+   * الحضور في النقل المحلي: لا مقبس ينقطع ولا خادم يحرس، فيكفي تثبيت العلم
+   * عند الظهور. موجود ليطابق الواجهة، ولأن تبديل التبويب يجب ألّا يُظهر
+   * اللاعب منقطعًا هنا أيضًا.
+   */
+  watchPresence(code: string, playerId: string): () => void {
+    const mark = () => {
+      if (document.visibilityState !== 'visible') return;
+      void this.updatePlayer(code, playerId, { connected: true, lastSeen: Date.now() });
+    };
+    mark();
+    document.addEventListener('visibilitychange', mark);
+    window.addEventListener('pageshow', mark);
+    return () => {
+      document.removeEventListener('visibilitychange', mark);
+      window.removeEventListener('pageshow', mark);
+    };
+  }
+
   watchConnection(onChange: (status: ConnectionStatus) => void): () => void {
     const emit = () => onChange(navigator.onLine ? 'online' : 'offline');
     window.addEventListener('online', emit);

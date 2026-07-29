@@ -9,6 +9,8 @@
 
 import {
   get,
+  goOffline,
+  goOnline,
   onDisconnect,
   onValue,
   ref,
@@ -128,11 +130,10 @@ export class FirebaseTransport implements RoomTransport {
       await set(ref(db(), `${room(code)}/round/progress/${playerId}`), EMPTY_PROGRESS);
     }
 
-    // الحضور: عند انقطاع الجهاز تُقلب الحالة تلقائيًا على الخادم.
-    await onDisconnect(ref(db(), `${room(code)}/players/${playerId}/connected`)).set(false);
-    await onDisconnect(ref(db(), `${room(code)}/players/${playerId}/lastSeen`)).set(
-      serverTimestamp(),
-    );
+    /*
+      الحضور لا يُسلَّح هنا: `watchPresence` يملكه ويُعيد تسليحه عند كل اتصال.
+      تسليحه مرّة واحدة عند الانضمام كان العطل — الحارس يُستهلَك عند تنفيذه.
+    */
   }
 
   async leaveRoom(code: string, playerId: string): Promise<void> {
@@ -213,6 +214,58 @@ export class FirebaseTransport implements RoomTransport {
     return onValue(ref(db(), '.info/connected'), (snapshot) => {
       onChange(snapshot.val() === true ? 'online' : 'offline');
     });
+  }
+
+  /**
+   * حضور يصمد عبر الانقطاعات.
+   *
+   * `onDisconnect` **يُستهلَك عند تنفيذه**: ينفّذه الخادم مرّة عند سقوط الاتصال
+   * ثم يزول. فتسليحه مرّة واحدة عند الانضمام يعني أن أول خروج من التطبيق يترك
+   * اللاعب «منقطعًا» إلى الأبد — لا حارس يُعاد، ولا أحد يُعيد الحالة إلى
+   * «متصل» حين يرجع. وهذا ما كان يحدث.
+   *
+   * الحلّ هو النمط الذي توصي به Firebase: مراقبة `.info/connected`، وعند كل
+   * اتصال يُعاد التسليح ثم يُعلَن الحضور.
+   *
+   * **الترتيب ليس تفصيلًا:** التسليح قبل الإعلان. لو أُعلن الحضور أولًا ثم
+   * سقط الاتصال قبل أن يصل التسليح، لبقي اللاعب «متصلًا» شبحًا لا يُصحّحه شيء.
+   */
+  watchPresence(code: string, playerId: string): () => void {
+    const connectedRef = ref(db(), `${room(code)}/players/${playerId}/connected`);
+    const seenRef = ref(db(), `${room(code)}/players/${playerId}/lastSeen`);
+
+    const stop = onValue(ref(db(), '.info/connected'), (snapshot) => {
+      if (snapshot.val() !== true) return;
+      void (async () => {
+        try {
+          await onDisconnect(connectedRef).set(false);
+          await onDisconnect(seenRef).set(serverTimestamp());
+          await set(connectedRef, true);
+          await set(seenRef, serverTimestamp());
+        } catch {
+          /* المحاولة التالية تأتي مع حدث الاتصال التالي — لا داعي للضجيج */
+        }
+      })();
+    });
+
+    /*
+      متصفحات الجوال تجمّد الصفحة في الخلفية بدل إغلاق المقبس، فقد يعود
+      المستخدم قبل أن يلاحظ العميل أن الاتصال سقط أصلًا. الإيقاظ عند الظهور
+      يجبر الحلقة أعلاه على العمل فورًا بدل انتظار مهلة المقبس.
+    */
+    const wake = () => {
+      if (document.visibilityState !== 'visible') return;
+      goOffline(db());
+      goOnline(db());
+    };
+    document.addEventListener('visibilitychange', wake);
+    window.addEventListener('pageshow', wake);
+
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', wake);
+      window.removeEventListener('pageshow', wake);
+    };
   }
 
   watchSecret(

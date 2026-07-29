@@ -212,3 +212,71 @@ describe('جولة جديدة', () => {
     expect(Object.keys(after.players)).toEqual(['p1']);
   });
 });
+
+/*
+  الخروج من التطبيق والعودة إليه لا يجوز أن يُخرج اللاعب من الجلسة.
+
+  العطل الأصلي كان في مسار Firebase: `onDisconnect` يُستهلَك عند تنفيذه، وكان
+  مُسلَّحًا مرّة واحدة عند الانضمام — فبعد أول انقطاع لا حارس يُعاد ولا أحد
+  يُعيد الحالة إلى «متصل». العقد الذي يمنع عودته مشترك بين النقلتين:
+  `watchPresence` يحيا ما دام اللاعب في الغرفة، ويُعيد إعلان الحضور عند كل عودة.
+*/
+describe('الحضور يصمد عبر الخروج والعودة', () => {
+  it('يعيد اللاعب متصلًا بعد أن يُعلَّم منقطعًا', async () => {
+    const transport = new LocalTransport();
+    const id = await transport.identify();
+    const code = await transport.createRoom(id, SETTINGS);
+    await transport.joinRoom({ code, playerId: id, name: 'هزاع', avatarId: 'faisal' });
+
+    const stop = transport.watchPresence(code, id);
+
+    // انقطاع: ما يفعله الخادم عند سقوط المقبس
+    await transport.leaveRoom(code, id);
+    expect(readPlayer(transport, code, id).connected).toBe(false);
+
+    // عودة إلى التطبيق
+    document.dispatchEvent(new Event('visibilitychange'));
+    await Promise.resolve();
+    expect(readPlayer(transport, code, id).connected).toBe(true);
+
+    stop();
+  });
+
+  it('لا يعلن الحضور والصفحة مخفيّة — لا يكذب على بقية الطاولة', async () => {
+    const transport = new LocalTransport();
+    const id = await transport.identify();
+    const code = await transport.createRoom(id, SETTINGS);
+    await transport.joinRoom({ code, playerId: id, name: 'ريم', avatarId: 'noura' });
+    const stop = transport.watchPresence(code, id);
+    await transport.leaveRoom(code, id);
+
+    const original = Object.getOwnPropertyDescriptor(Document.prototype, 'visibilityState');
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    await Promise.resolve();
+    expect(readPlayer(transport, code, id).connected).toBe(false);
+
+    if (original) Object.defineProperty(Document.prototype, 'visibilityState', original);
+    else Reflect.deleteProperty(document, 'visibilityState');
+    stop();
+  });
+
+  it('يتوقف عن التجديد بعد إلغاء الاشتراك', async () => {
+    const transport = new LocalTransport();
+    const id = await transport.identify();
+    const code = await transport.createRoom(id, SETTINGS);
+    await transport.joinRoom({ code, playerId: id, name: 'سعود', avatarId: 'saud' });
+    transport.watchPresence(code, id)();
+
+    await transport.leaveRoom(code, id);
+    document.dispatchEvent(new Event('visibilitychange'));
+    await Promise.resolve();
+    expect(readPlayer(transport, code, id).connected).toBe(false);
+  });
+});
+
+function readPlayer(transport: LocalTransport, code: string, id: string) {
+  let state: RoomState | null = null;
+  transport.watchRoom(code, (next) => (state = next))();
+  return (state as unknown as RoomState).players[id]!;
+}
