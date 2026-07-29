@@ -251,9 +251,9 @@ function HostSeatForm({
   const valid = trimmed.length > 0 && !nameTaken && chosen !== null;
 
   return (
-    <Panel tone="amber" className="host-seat">
+    <Panel tone="night" className="host-seat">
       <h3>أنت تلعب هذه الجولة</h3>
-      <p className="eyebrow-note">
+      <p className="host-seat__lede">
         اكتب اسمك واختر شخصيتك. سيصلك دورك على هذا الجهاز مثل بقية اللاعبين.
       </p>
 
@@ -286,7 +286,7 @@ function HostSeatForm({
               onClick={() => setAvatarId(character.id)}
               aria-label={character.name}
             >
-              <Character characterId={character.id} size={44} still />
+              <Character characterId={character.id} size={46} still />
               <span>{character.name}</span>
             </button>
           </li>

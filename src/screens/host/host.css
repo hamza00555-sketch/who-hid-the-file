@@ -100,9 +100,25 @@
   flex: none;
 }
 
+/*
+  التبويبات ملتصقة بأعلى الشاشة.
+
+  المحتوى تحتها طويل (بطاقة الانضمام + مقعد المضيف + عشر شخصيات)، وبالتمرير
+  كانت تخرج من الشاشة فيصعب العودة إليها — وتمرّ تحت شريط حالة الجهاز
+  الشفّاف، فتُقرأ نصف مقصوصة خلف الساعة والبطارية.
+
+  `env(safe-area-inset-top)` يوقفها تحت النتوء لا خلفه، والخلفية المعتمة
+  تمنع مرور المحتوى من ورائها.
+*/
 .lobby__tabs {
+  position: sticky;
+  top: max(0px, env(safe-area-inset-top));
+  z-index: var(--z-sticky);
   display: flex;
   gap: var(--s-2);
+  padding-block: var(--s-2);
+  background: oklch(0.16 0.05 265 / 0.94);
+  backdrop-filter: blur(3px);
 }
 
 .lobby__tab {
@@ -450,8 +466,6 @@
 
   .lobby {
     gap: var(--s-3);
-    /* مساحة تحت المحتوى بقدر الشريط الثابت، وإلا اختفت آخر الأسماء خلفه */
-    padding-bottom: 7.5rem;
   }
 
   /* شرطة البادئة تصلح لقائمة محاذاة للبداية، لا لسطر متوسّط */
@@ -530,12 +544,20 @@
     justify-content: center;
   }
 
-  /* الشريط مثبّت فعلًا بأسفل الشاشة، لا يعوم فوق المحتوى */
+  /*
+    الشريط `sticky` لا `fixed`.
+
+    `fixed` يخرج من التخطيط، فيحتاج حشوًا أسفل المحتوى بقدر ارتفاعه — وارتفاعه
+    متغيّر: قائمة الموانع تطول وتقصر بين صفر وأربعة أسطر. أي رقم ثابت يكون
+    خاطئًا في حالة ما، وقد كان: 7.5rem غطّت رمز الانضمام حين ظهر مانعان.
+
+    `sticky` يبقى في التخطيط فيحجز مكانه بنفسه مهما تغيّر ارتفاعه، ويظل ملتصقًا
+    بأسفل الشاشة أثناء التمرير — نفس الفائدة بلا رقم سحري.
+  */
   .lobby__bar {
-    position: fixed;
-    inset-inline: var(--s-4);
+    position: sticky;
     bottom: max(var(--s-3), env(safe-area-inset-bottom));
-    margin: 0;
+    margin-top: var(--s-2);
     flex-direction: column;
     align-items: stretch;
     gap: var(--s-2);
@@ -1100,15 +1122,34 @@
 
 /* ══════ مقعد المضيف في الردهة ══════ */
 
+/*
+  الخطّ الكهرماني — لا سطح كهرماني — هو ما يقول «هذا يخصّك أنت لا الطاولة».
+  نفس إشارة `.host-me`، فيتعلّمها المضيف مرّة ويقرؤها في كل مرحلة.
+
+  النسخة الأولى كانت لوحًا كهرمانيًّا مصمتًا. خطأ مزدوج: نقض استراتيجية اللون
+  المُلتزِمة (الكحلي يحمل أكثر من 60% من السطح، والدفء يأتي من الشخصيات
+  والمصباح لا من خلفية دافئة)، وأسقط النصّ الثانوي إلى **1.09:1** — رماديٌّ
+  مصمَّم لخلفية داكنة فوق سطح فاتح. الخطّ يحقّق التمييز نفسه بلا الثمنين.
+*/
 .host-seat {
   display: flex;
   flex-direction: column;
   gap: var(--s-3);
   text-align: start;
+  border-color: var(--amber);
 }
 
 .host-seat h3 {
   margin: 0;
+  color: var(--amber);
+}
+
+.host-seat__lede {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  /* سطر واحد أو سطران — لا فقرة تحتاج قياس طول السطر */
+  max-width: 42ch;
 }
 
 .host-seat__label {
@@ -1135,15 +1176,17 @@
 }
 
 /*
-  شبكة تلقائية الأعمدة: عدد الشخصيات المتاحة يتغيّر مع كل انضمام، وتثبيت
-  الأعمدة كان يترك صفًّا يتيمًا أو يضغط البطاقات.
+  نفس مقاسات شبكة شاشة انضمام اللاعب (`.join__avatars`) لا مقاسات جديدة:
+  خمسة أعمدة تضع العشر شخصيات في صفّين. نسختي الأولى كانت `5rem` فأعطت ثلاثة
+  أعمدة وأربعة صفوف — بطاقة بطول شاشة كاملة تدفع رمز الانضمام، وهو ما يحتاجه
+  بقية اللاعبين، إلى ما تحت الطيّة.
 */
 .host-seat__avatars {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(5rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(4rem, 1fr));
   gap: var(--s-2);
 }
 
@@ -1153,13 +1196,12 @@
   align-items: center;
   gap: 2px;
   width: 100%;
-  min-height: 5.5rem;
-  padding: var(--s-2) 2px;
-  background: var(--night-lift);
+  padding: var(--s-1);
+  background: var(--night);
   border: 2px solid var(--night-edge);
   border-radius: var(--r-md);
   color: var(--text);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 700;
 }
 
