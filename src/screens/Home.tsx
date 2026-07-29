@@ -5,16 +5,24 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GAME_CONFIG } from '../config/game.config';
-import { ROSTER } from '../game/roster';
 import type { RoomSettings } from '../game/types';
 import { useSession, rememberSession, recallSession, forgetSession } from '../net/session';
 import { isFirebaseConfigured } from '../net/env';
-import { Character } from '../ui/components/Character';
-import { FileProp } from '../ui/components/FileProp';
 import { SceneBackdrop, preloadScenes } from '../ui/components/SceneBackdrop';
 import { preloadDice } from '../ui/components/Dice';
 import { Badge, Button, Panel } from '../ui/components/kit';
 import { LocalModeNotice } from '../ui/components/LocalModeNotice';
+import { HomeHero } from './HomeHero';
+import {
+  IconClock,
+  IconDevices,
+  IconKey,
+  IconPeople,
+  IconPlus,
+  IconShield,
+  InfoStrip,
+  MenuItem,
+} from './HomeMenu';
 import './home.css';
 
 const DEFAULT_SETTINGS: RoomSettings = {
@@ -78,13 +86,7 @@ export function Home() {
       )}
 
       <div className="screen__body home__body">
-        <div className="home__stage" aria-hidden="true">
-          <Character characterId={ROSTER[3]!.id} state="suspicious" size={148} className="home__char home__char--a" />
-          <Character characterId={ROSTER[0]!.id} state="look-left" size={168} className="home__char home__char--b" />
-          <FileProp state="breathing" size={148} className="home__file" />
-          <Character characterId={ROSTER[5]!.id} state="look-right" size={168} className="home__char home__char--c" />
-          <Character characterId={ROSTER[6]!.id} state="hiding" size={148} className="home__char home__char--d" />
-        </div>
+        <HomeHero />
 
         <header className="home__title">
           <h1>{GAME_CONFIG.name}</h1>
@@ -99,12 +101,18 @@ export function Home() {
 
         {mode === 'idle' ? (
           <div className="home__actions">
-            <Button size="xl" onClick={createRoom} disabled={!ready || busy}>
-              {online ? 'إنشاء جلسة' : 'إنشاء جلسة تجريبية'}
-            </Button>
-            <Button size="lg" tone="quiet" onClick={() => setMode('joining')}>
-              انضمام برمز
-            </Button>
+            <MenuItem
+              icon={IconPlus}
+              label={online ? 'إنشاء جلسة' : 'إنشاء جلسة تجريبية'}
+              disabled={!ready || busy}
+              onClick={createRoom}
+            />
+            <MenuItem
+              icon={IconKey}
+              label="انضمام برمز"
+              tone="quiet"
+              onClick={() => setMode('joining')}
+            />
           </div>
         ) : (
           <Panel className="home__join">
@@ -171,10 +179,19 @@ export function Home() {
           </p>
         )}
 
-        <p className="home__footer">
-          {GAME_CONFIG.players.min}–{GAME_CONFIG.players.max} لاعبين · جهاز رئيسي + جهاز لكل
-          لاعب · {GAME_CONFIG.owner}
-        </p>
+        <InfoStrip
+          items={[
+            { icon: IconClock, value: '60–90', label: 'دقيقة', tone: 'var(--sky)' },
+            {
+              icon: IconPeople,
+              value: `${GAME_CONFIG.players.min}–${GAME_CONFIG.players.max}`,
+              label: 'لاعبين',
+              tone: 'var(--violet)',
+            },
+            { icon: IconDevices, value: 'جهاز لكل لاعب', label: 'مع جهاز رئيسي', tone: 'var(--mint)' },
+            { icon: IconShield, value: 'قوسي', label: 'التأمينات الاجتماعية', tone: 'var(--amber)' },
+          ]}
+        />
       </div>
     </div>
   );

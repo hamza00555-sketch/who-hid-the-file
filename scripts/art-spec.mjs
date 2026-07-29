@@ -100,3 +100,68 @@ STYLE - STRICT: early-2000s TV action-cartoon as FLAT VECTOR ART. Bold uniform i
 FORBIDDEN: gradients, airbrush, soft shading, blur, glow, vignette, 3D rendering, cloth texture, glossy highlights, painterly brushwork.
 
 Must stay readable shrunk to 48x48 pixels.`;
+
+/* ══════════════════════ رسومات الشاشات ══════════════════════ */
+
+/**
+ * القاعدة المشتركة لكل رسم يُقصّ لاحقًا: خلفية رمادية مسطّحة `#808080`
+ * يزيلها `process-art.mjs` محليًا. أي لون آخر يترك هالة حول الحواف.
+ */
+const CUTOUT_BG = `BACKGROUND: plain flat solid mid-grey #808080 and absolutely nothing else - no floor, no shadow, no gradient, no vignette, no props, no text, no watermark, no border. The grey must be one perfectly uniform colour so it can be keyed out cleanly.`;
+
+/** الأسلوب نفسه لكن بلا قاعدة «شخصية واحدة في المنتصف» */
+const SCENE_STYLE = `STYLE: early-2000s American TV action-cartoon drawn as FLAT VECTOR ART. Bold uniform ink outline on every single shape, thick even marker-pen weight, outline colour is DARK NAVY BLUE #101A35 - never pure black. Completely FLAT cel shading: every colour is ONE solid flat fill plus at most ONE hard-edged darker shadow shape.
+
+CHARACTER PROPORTIONS: big-headed chibi mascots, the head is ENORMOUS - about one third of the figure and as wide as the shoulders. Enormous expressive eyes with clean white sclera and big round dark pupils. Thick simple eyebrows. NOT realistic human anatomy.
+
+EXPRESSIONS: warm, curious, playful. Raised curved eyebrows, soft smiles. NO angry eyebrows, NO scowl, NO frown, NO glare - this is a friendly social game.
+
+ABSOLUTELY FORBIDDEN: gradients, colour ramps, airbrush, soft shading, blur, glow, vignette, ambient occlusion, 3D rendering, cloth texture, glossy highlights, painterly brushwork.`;
+
+/**
+ * بطل الشاشة الرئيسية — مشهد كامل، لا يُقصّ.
+ *
+ * تُحفظ في `public/scenes/home-hero.webp`. خلفيته كحلية بلون `--night-deep`
+ * نفسه فيذوب في الصفحة بلا حدّ ظاهر، ولا نحتاج قصًّا ولا شفافية.
+ */
+export const HOME_HERO_PROMPT = `A wide horizontal illustration for the top of a game's home screen.
+
+SCENE: two big-headed cartoon Saudi office colleagues lean on a low round dark table from the left and the right, facing each other, both looking down at a chunky golden-yellow MANILA FOLDER standing upright in the exact centre of the table between them. Each rests a hand thoughtfully near the chin. On the LEFT a woman in a teal headscarf and dark navy work clothes. On the RIGHT a man in a crisp white thobe with a red-and-white checkered shemagh and black agal.
+
+THE FOLDER: warm golden-yellow (#E8A93A) flat fill, crisp white paper sheets poking out of the top, a bold RED WAX SEAL with a white CHECK MARK on its face, two darker golden horizontal bars below the seal. A few small bright blue exclamation-mark spark strokes float just above it to signal surprise.
+
+BEHIND THEM: a night office - a tall window showing a dark city skyline with small warm amber lit windows, a shelf with binders on the far left, a potted plant. All of it in deep midnight navy and muted blues, dark and quiet.
+
+BACKGROUND COLOUR: the area around the scene must be solid flat deep midnight navy #0F1A35 so the illustration blends into a dark app screen with no visible edge. No frame, no border, no text.
+
+${SCENE_STYLE}
+
+The two characters and the folder are the only bright elements; everything else recedes into the dark.`;
+
+/**
+ * شخصيتان تطلّان من فوق حافة أفقية وتشيران للأسفل.
+ *
+ * تُقصّ وتوضع فوق بطاقة رمز الجلسة البيضاء في ردهة المضيف، فيبدو أنهما
+ * متكئتان على البطاقة. لذلك: الأيدي والسواعد لازمة، وأسفل الصدر مقطوع.
+ */
+export const LOBBY_PEEKERS_PROMPT = `Two big-headed cartoon Saudi office colleagues seen from the chest up, side by side with a WIDE EMPTY GAP between them, both leaning FORWARD and DOWNWARD over an invisible horizontal ledge.
+
+POSE - important: each one rests both forearms and hands on the invisible ledge in front of them, and each extends ONE index finger pointing DOWN and slightly inward, as if pointing at something on a card below them. Their bodies are cut off cleanly at the bottom just below the chest, in a straight horizontal line.
+
+LEFT character: a woman in a teal headscarf and dark navy work clothes, warm smile, looking down.
+RIGHT character: a man in a crisp white thobe with a red-and-white checkered shemagh and black agal, short black beard, friendly smile, looking down.
+
+They are NOT touching each other - leave a wide clear gap in the middle so a card can sit between and below them.
+
+${SCENE_STYLE}
+
+${CUTOUT_BG}`;
+
+/** خزنة صغيرة لبطاقة «لديك جلسة سابقة» — تُقصّ. */
+export const VAULT_PROMPT = `A single chunky cartoon SAFE / VAULT, closed, seen from the front at a slight three-quarter angle.
+
+Steel blue-grey body with a darker blue shadow side, a round combination dial in the centre, a small sturdy handle, and two small feet. A tiny potted plant with simple leaves sits on the floor beside it on the right. Nothing else.
+
+${SCENE_STYLE}
+
+${CUTOUT_BG}`;

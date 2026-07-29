@@ -9,6 +9,23 @@
   gap: var(--s-4);
 }
 
+/*
+  البطل صورة عريضة خلفيتها بلون `--night-deep` نفسه، فتذوب في الصفحة بلا حدّ.
+  القناع السفلي يخفي أي فرق ضئيل بين كحلي الصورة وكحلي الصفحة.
+*/
+.home__hero {
+  width: 100%;
+  max-width: 34rem;
+  margin-inline: auto;
+}
+
+.home__hero img {
+  width: 100%;
+  height: auto;
+  display: block;
+  mask-image: linear-gradient(to bottom, #000 76%, transparent 100%);
+}
+
 /* المسرح: الشخصيات والملف — تكوين واحد لا شبكة بطاقات */
 .home__stage {
   display: flex;
@@ -138,4 +155,137 @@
   font-size: 0.9rem;
   margin-top: auto;
   padding-top: var(--s-5);
+}
+
+
+/* ══════ عناصر القائمة ══════ */
+
+/*
+  صفّ كامل العرض: أيقونة في الحافة البادئة، نصّ متوسّط، سهم في الأخرى.
+  هدف اللمس هو الصفّ كله لا النص وحده.
+*/
+.menu-item {
+  display: grid;
+  grid-template-columns: 2.75rem 1fr 1.5rem;
+  align-items: center;
+  gap: var(--s-3);
+  width: 100%;
+  min-height: 4rem;
+  padding: 0 var(--s-4);
+  border: var(--stroke) solid var(--ink);
+  border-radius: var(--r-lg);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.2rem;
+  box-shadow: var(--shadow-sticker);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    filter var(--dur-fast) var(--ease-out);
+}
+
+.menu-item--primary {
+  background: var(--blue-bright);
+  color: oklch(0.16 0.04 262);
+}
+
+.menu-item--quiet {
+  background: var(--night-lift);
+  color: var(--text);
+}
+
+.menu-item__icon {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--r-md);
+  background: oklch(0.16 0.04 262 / 0.22);
+}
+
+.menu-item--quiet .menu-item__icon {
+  background: oklch(0.98 0.01 250 / 0.1);
+}
+
+.menu-item__label {
+  text-align: center;
+}
+
+.menu-item__chevron {
+  font-size: 1.8rem;
+  line-height: 1;
+  opacity: 0.55;
+}
+
+.menu-item:hover:not(:disabled) {
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0 var(--ink);
+}
+.menu-item:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+.menu-item:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+  box-shadow: var(--shadow-sticker-sm);
+}
+
+/* ══════ شريط المعلومات ══════ */
+
+/*
+  أربع خانات على سطر واحد في الشاشات الواسعة، وخانتان على الجوال — لا تمرير
+  أفقي ولا نصّ مقصوص. الفواصل بين الخانات لا حول الشريط كله.
+*/
+.info-strip {
+  list-style: none;
+  margin: 0;
+  padding: var(--s-3) var(--s-2);
+  width: 100%;
+  max-width: 34rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--s-3) 0;
+  background: oklch(0.22 0.05 262 / 0.55);
+  border: 2px solid var(--night-edge);
+  border-radius: var(--r-lg);
+}
+
+@media (min-width: 34rem) {
+  .info-strip {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.info-strip__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding-inline: var(--s-2);
+  text-align: center;
+}
+
+.info-strip__cell + .info-strip__cell {
+  border-inline-start: 1px solid var(--night-edge);
+}
+
+/* على عمودين، الخانة الثالثة تبدأ سطرًا جديدًا فلا تحمل فاصلًا */
+@media (max-width: 33.99rem) {
+  .info-strip__cell:nth-child(odd) {
+    border-inline-start: none;
+  }
+}
+
+.info-strip__cell b {
+  unicode-bidi: isolate;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  line-height: 1.25;
+}
+
+.info-strip__cell small {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.25;
 }
