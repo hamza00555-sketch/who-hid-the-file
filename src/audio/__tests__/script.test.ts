@@ -1,7 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import { buildScript } from '../script.ar';
+import { buildScript, type VoiceLine } from '../script.ar';
+import type { DiceMode } from '../../game/types';
 
 const script = buildScript('nights');
+
+/** كل جملة يمكن أن ينطقها الراوي، في كل تركيبة إعدادات ممكنة. */
+function everyLine(): VoiceLine[] {
+  const out: VoiceLine[] = [];
+  for (const naming of ['nights', 'hours'] as const) {
+    const s = buildScript(naming);
+    for (const value of Object.values(s)) {
+      if (Array.isArray(value)) out.push(...value);
+    }
+    for (const slot of [1, 2, 3, 4, 5, 6] as const) {
+      for (const mode of ['digital', 'physical'] as DiceMode[]) {
+        out.push(...s.slotOpen(slot, mode));
+      }
+      out.push(...s.slotClose(slot));
+    }
+    for (const n of [3, 2, 1]) out.push(s.countdownTick(n));
+  }
+  return out;
+}
 
 /**
  * التعليمة التي يسمعها المستيقظ وحده هي الفرق الوحيد بين نمطي اللعب في الليل،
@@ -52,6 +72,36 @@ describe('تعليمة الاستيقاظ تتبع طريقة اللعب', () =>
       for (const word of forbidden) {
         expect(line.text, `«${line.text}» في ${line.id}`).not.toContain(word);
       }
+    }
+  });
+});
+
+/*
+  الجمل تُسجَّل ملفات باسم المعرّف (`/audio/{voice}/{id}.mp3`). فإن حمل معرّف
+  واحد نصّين مختلفين — بحسب مصطلح المواعيد أو طريقة اللعب — فملف واحد سيخدم
+  نطقين، وسيسمع نصف الطاولة الجملة الخطأ.
+
+  هذا العيب **لا يظهر مع TTS إطلاقًا** لأنه يقرأ النصّ الحيّ لا الملف، فلا
+  يكشفه تشغيل اللعبة قبل التسجيل. هذا الاختبار هو ما يكشفه.
+*/
+describe('معرّفات الجمل صالحة للتسجيل', () => {
+  it('كل معرّف يقابل نصًّا واحدًا لا أكثر', () => {
+    const byId = new Map<string, Set<string>>();
+    for (const line of everyLine()) {
+      if (!byId.has(line.id)) byId.set(line.id, new Set());
+      byId.get(line.id)!.add(line.text);
+    }
+    const clashes = [...byId.entries()]
+      .filter(([, texts]) => texts.size > 1)
+      .map(([id, texts]) => `${id} → ${[...texts].join(' | ')}`);
+    expect(clashes).toEqual([]);
+  });
+
+  it('لا معرّف فارغ ولا مسار مجلّد داخل اسم الملف', () => {
+    for (const line of everyLine()) {
+      expect(line.id.length, line.text).toBeGreaterThan(0);
+      expect(line.audioSrc).toBe(`${line.id}.mp3`);
+      expect(line.id).not.toContain('/');
     }
   });
 });
