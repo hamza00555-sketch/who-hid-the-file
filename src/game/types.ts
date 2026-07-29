@@ -123,6 +123,13 @@ export interface RoomSettings {
   nightCountdownSeconds: number;
   discussionSeconds: number;
   voiceEnabled: boolean;
+  /**
+   * هل يلعب صاحب الجهاز الرئيسي أيضًا؟
+   *
+   * مطفأ افتراضيًا. عند تشغيله ينضم المضيف لاعبًا كامل الحقوق: اسم وشخصية
+   * ومقعد وسرّ، ويُحسب ضمن العدد الأدنى والأقصى.
+   */
+  hostPlays: boolean;
   narratorVoice: NarratorVoice;
   ttsRate: number;
 }

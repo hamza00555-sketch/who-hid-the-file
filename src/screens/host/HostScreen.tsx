@@ -22,9 +22,10 @@ import { planAccomplices } from '../../game/accomplice';
 import { reorderSeats } from '../../game/seating';
 import { isSupportedPlayerCount } from '../../game/rules';
 import { slotOfNightPhase, type Phase } from '../../game/types';
-import { forgetSession, useRoom, useSession } from '../../net/session';
+import { forgetSession, useRoom, useSecret, useSession } from '../../net/session';
 import { SceneBackdrop, type SceneTone } from '../../ui/components/SceneBackdrop';
 import { Badge, Button, ExitButton, WaitingNote } from '../../ui/components/kit';
+import { HostPlayerPanel } from './HostPlayerPanel';
 import {
   HostDiceStage,
   HostDiscussionStage,
@@ -61,8 +62,9 @@ const SCENE_TONE: Partial<Record<Phase, SceneTone>> = {
 export function HostScreen() {
   const { code = '' } = useParams();
   const navigate = useNavigate();
-  const { transport } = useSession();
-  const { state, players, isHost, playerCount, connection, loading, missing } = useRoom(code);
+  const { transport, playerId } = useSession();
+  const { state, players, me, isHost, playerCount, connection, loading, missing } = useRoom(code);
+  const secret = useSecret(code);
 
   const phase = state?.meta.phase ?? 'lobby';
   const roundId = state?.meta.roundId ?? '';
@@ -387,15 +389,40 @@ export function HostScreen() {
       </header>
 
       <main className="screen__body host-body">
+        {/*
+          المضيف لاعب أيضًا: شاشته الخاصة تسبق مشهد الجمهور لأنها الإجراء
+          المطلوب منه الآن، ومشهد الجمهور حالةٌ يقرؤها من حوله.
+        */}
+        {state.settings.hostPlays && me && (
+          <HostPlayerPanel
+            code={code}
+            me={me}
+            secret={secret}
+            players={players}
+            settings={state.settings}
+            phase={phase}
+            progress={state.progress}
+            nightSlot={slotOfNightPhase(phase)}
+            secretResolved={state.meta.secretStage === 'resolved'}
+          />
+        )}
+
         {phase === 'lobby' && (
           <HostLobbyStage
             code={code}
             joinUrl={joinUrl}
             players={players}
             settings={state.settings}
+            hostJoined={Boolean(me)}
             onSettings={(patch) => void transport.updateSettings(code, patch)}
             onReorder={handleReorder}
             onStart={startRoles}
+            onHostJoin={async (name, avatarId) => {
+              if (!playerId) return;
+              await transport.joinRoom({ code, playerId, name, avatarId });
+              // المضيف جاهز فور جلوسه: لا شاشة انتظار له يضغط فيها «أنا جاهز»
+              await transport.updatePlayer(code, playerId, { ready: true });
+            }}
           />
         )}
 

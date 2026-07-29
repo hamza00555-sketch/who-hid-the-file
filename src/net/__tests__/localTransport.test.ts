@@ -18,6 +18,7 @@ const SETTINGS: RoomSettings = {
   nightCountdownSeconds: 10,
   discussionSeconds: 180,
   voiceEnabled: true,
+  hostPlays: false,
   narratorVoice: 'male',
   ttsRate: 0.82,
 };

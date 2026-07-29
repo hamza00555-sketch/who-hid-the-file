@@ -46,26 +46,32 @@ export function HostLobbyStage({
   joinUrl,
   players,
   settings,
+  hostJoined,
   onSettings,
   onReorder,
   onStart,
+  onHostJoin,
 }: {
   code: string;
   joinUrl: string;
   players: PlayerPublic[];
   settings: RoomSettings;
+  hostJoined: boolean;
   onSettings: (patch: Partial<RoomSettings>) => void;
   onReorder: (from: number, to: number) => void;
   onStart: () => void;
+  onHostJoin: (name: string, avatarId: string) => Promise<void>;
 }) {
   const [tab, setTab] = useState<'join' | 'seating' | 'settings'>('join');
   const readyCount = players.filter((player) => player.ready).length;
   const countOk = isSupportedPlayerCount(players.length);
   const allReady = players.length > 0 && readyCount === players.length;
   const allConnected = players.every((player) => player.connected);
-  const canStart = countOk && allReady && allConnected;
+  const hostMissing = settings.hostPlays && !hostJoined;
+  const canStart = countOk && allReady && allConnected && !hostMissing;
 
   const blockers = [
+    hostMissing && 'هذا الجهاز يلعب — اكتب اسمك واختر شخصيتك أولًا',
     !countOk && `العدد الحالي ${players.length} — المطلوب من ${GAME_CONFIG.players.min} إلى ${GAME_CONFIG.players.max}`,
     countOk && !allReady && `${players.length - readyCount} لاعب لم يضغط «أنا جاهز»`,
     !allConnected && 'يوجد جهاز منقطع',
@@ -95,7 +101,18 @@ export function HostLobbyStage({
           ))}
         </nav>
 
-        {tab === 'join' && <JoinPanel code={code} joinUrl={joinUrl} />}
+        {tab === 'join' && (
+          <>
+            {hostMissing && (
+              <HostSeatForm
+                takenNames={players.map((player) => player.name)}
+                takenAvatars={players.map((player) => player.avatarId)}
+                onJoin={onHostJoin}
+              />
+            )}
+            <JoinPanel code={code} joinUrl={joinUrl} />
+          </>
+        )}
 
         {tab === 'seating' && (
           <Panel>
@@ -205,6 +222,97 @@ function RosterStrip({ players }: { players: PlayerPublic[] }) {
   );
 }
 
+/**
+ * مقعد المضيف حين يلعب.
+ *
+ * نموذج مصغّر لا نسخة من شاشة انضمام اللاعب: المضيف لا يحتاج مسح رمز ولا
+ * كتابة رمز الجلسة — هو صاحبها. يحتاج اسمًا وشخصية فقط.
+ */
+function HostSeatForm({
+  takenNames,
+  takenAvatars,
+  onJoin,
+}: {
+  takenNames: string[];
+  takenAvatars: string[];
+  onJoin: (name: string, avatarId: string) => Promise<void>;
+}) {
+  const options = useMemo(
+    () => ROSTER.filter((character) => !takenAvatars.includes(character.id)),
+    [takenAvatars],
+  );
+  const [name, setName] = useState('');
+  const [avatarId, setAvatarId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const chosen = avatarId ?? options[0]?.id ?? null;
+  const trimmed = name.trim();
+  const nameTaken = takenNames.some((other) => other.trim() === trimmed);
+  const valid = trimmed.length > 0 && !nameTaken && chosen !== null;
+
+  return (
+    <Panel tone="amber" className="host-seat">
+      <h3>أنت تلعب هذه الجولة</h3>
+      <p className="eyebrow-note">
+        اكتب اسمك واختر شخصيتك. سيصلك دورك على هذا الجهاز مثل بقية اللاعبين.
+      </p>
+
+      <label className="host-seat__label" htmlFor="host-name">
+        اسمك
+      </label>
+      <input
+        id="host-name"
+        className="host-seat__name"
+        value={name}
+        onChange={(event) => setName(event.target.value.slice(0, 20))}
+        placeholder="اكتب اسمك"
+        autoComplete="off"
+        aria-invalid={nameTaken || undefined}
+      />
+      {nameTaken && (
+        <p role="alert" className="host-seat__error">
+          هذا الاسم مستخدم في الجلسة — اختر اسمًا آخر.
+        </p>
+      )}
+
+      <p className="host-seat__label">اختر شخصيتك</p>
+      <ul className="host-seat__avatars">
+        {options.map((character) => (
+          <li key={character.id}>
+            <button
+              type="button"
+              aria-pressed={chosen === character.id}
+              data-selected={chosen === character.id || undefined}
+              onClick={() => setAvatarId(character.id)}
+              aria-label={character.name}
+            >
+              <Character characterId={character.id} size={44} still />
+              <span>{character.name}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <Button
+        size="lg"
+        full
+        disabled={!valid || busy}
+        onClick={async () => {
+          if (!valid || !chosen) return;
+          setBusy(true);
+          try {
+            await onJoin(trimmed, chosen);
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        خذ مقعدك
+      </Button>
+    </Panel>
+  );
+}
+
 function JoinPanel({ code, joinUrl }: { code: string; joinUrl: string }) {
   const [qr, setQr] = useState<string | null>(null);
 
@@ -296,6 +404,24 @@ function SettingsPanel({
             checked={settings.slotNaming === 'hours'}
             onChange={() => onChange({ slotNaming: 'hours' })}
             title="الساعة الواحدة … السادسة"
+          />
+        </div>
+      </fieldset>
+
+      <fieldset className="settings-panel__field">
+        <legend>من يلعب</legend>
+        <div className="settings-panel__choices">
+          <Choice
+            checked={!settings.hostPlays}
+            onChange={() => onChange({ hostPlays: false })}
+            title="هذا الجهاز راوٍ فقط"
+            note="يدير الصوت والمراحل ولا يأخذ دورًا"
+          />
+          <Choice
+            checked={settings.hostPlays}
+            onChange={() => onChange({ hostPlays: true })}
+            title="هذا الجهاز يلعب أيضًا"
+            note="يأخذ دورًا ونردًا وصوتًا مثل الجميع"
           />
         </div>
       </fieldset>

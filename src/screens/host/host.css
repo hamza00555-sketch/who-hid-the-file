@@ -1068,3 +1068,102 @@
   background: var(--night-lift);
   font-size: 1.2rem;
 }
+
+/* ══════ المضيف لاعبًا ══════ */
+
+/*
+  لوحة «دورك أنت» تسبق مشهد الجمهور: هي الإجراء المطلوب من صاحب الجهاز الآن،
+  ومشهد الجمهور خلفها حالةٌ يقرؤها من حوله. الإطار الكهرماني يفصل «ما يخصّني»
+  عمّا يراه الجميع — وهو الفصل الذي يمنع المضيف من الخلط بين دوره ودور الراوي.
+*/
+.host-me {
+  width: 100%;
+  max-width: 30rem;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  background: oklch(0.22 0.05 262 / 0.7);
+  border: var(--stroke) solid var(--amber);
+  border-radius: var(--r-lg);
+  text-align: center;
+}
+
+.host-me__title {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  color: var(--amber);
+}
+
+/* ══════ مقعد المضيف في الردهة ══════ */
+
+.host-seat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  text-align: start;
+}
+
+.host-seat h3 {
+  margin: 0;
+}
+
+.host-seat__label {
+  margin: 0;
+  font-weight: 700;
+}
+
+.host-seat__name {
+  width: 100%;
+  padding: var(--s-3);
+  font-size: 1.1rem;
+  font-weight: 700;
+  background: var(--night-deep);
+  border: var(--stroke) solid var(--ink);
+  border-radius: var(--r-md);
+  color: var(--text);
+}
+
+.host-seat__error {
+  margin: 0;
+  color: var(--coral);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/*
+  شبكة تلقائية الأعمدة: عدد الشخصيات المتاحة يتغيّر مع كل انضمام، وتثبيت
+  الأعمدة كان يترك صفًّا يتيمًا أو يضغط البطاقات.
+*/
+.host-seat__avatars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5rem, 1fr));
+  gap: var(--s-2);
+}
+
+.host-seat__avatars button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  min-height: 5.5rem;
+  padding: var(--s-2) 2px;
+  background: var(--night-lift);
+  border: 2px solid var(--night-edge);
+  border-radius: var(--r-md);
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.host-seat__avatars button[data-selected] {
+  border-color: var(--amber);
+  background: oklch(0.3 0.06 262);
+}
