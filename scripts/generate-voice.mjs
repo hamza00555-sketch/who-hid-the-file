@@ -43,7 +43,7 @@ const args = Object.fromEntries(
 */
 const CHOSEN = {
   male: '7888649a-b139-4295-a57b-4e103079d817', // Hugo — معتمد
-  female: null, // بانتظار الاختيار
+  female: 'ca83ca7f-c186-493d-bd69-0d765fa861b2', // Elena — معتمد
 };
 
 const voice = args.voice;
