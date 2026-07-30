@@ -13,7 +13,9 @@
     "test:live": "vitest run --mode production --config vitest.live.config.ts",
     "verify:rules": "node scripts/verify-rules.mjs",
     "typecheck": "tsc --noEmit",
-    "icons": "node scripts/build-icons.mjs"
+    "icons": "node scripts/build-icons.mjs",
+    "voice:list": "tsx scripts/voice-manifest.mjs",
+    "voice:generate": "tsx scripts/generate-voice.mjs"
   },
   "dependencies": {
     "firebase": "^12.16.0",
