@@ -6,7 +6,7 @@
  *
  * الخيارات:
  *   --voice=male|female   المجلّد الهدف تحت `public/audio/` (إلزامي)
- *   --voice-id=<id>       معرّف الصوت في ElevenLabs (إلزامي)
+ *   --voice-id=<id>       معرّف الصوت — اختياري، فالمختار مسجَّل في `CHOSEN`
  *   --model=<id>          افتراضيًا `eleven_multilingual_v2` — وهو الذي ينطق العربية
  *   --force               يعيد توليد الملفات الموجودة بدل تخطّيها
  *   --dry                 يطبع ما سيفعله بلا نداء شبكة ولا كلفة
@@ -34,14 +34,32 @@ const args = Object.fromEntries(
   }),
 );
 
+/*
+  الأصوات المعتمدة بعد الاستماع. تُسجَّل هنا لا في وثيقة، لأن الأمر الذي
+  يولّد الملفات هو الذي يجب أن يعرفها — ونسيان تمريرها كان سيولّد 69 ملفًّا
+  بصوت خاطئ قبل أن يلاحظ أحد.
+
+  المصدر: أصوات ElevenLabs المعروضة في Higgsfield، نموذج multilingual v2.
+*/
+const CHOSEN = {
+  male: '7888649a-b139-4295-a57b-4e103079d817', // Hugo — معتمد
+  female: null, // بانتظار الاختيار
+};
+
 const voice = args.voice;
-const voiceId = args['voice-id'];
+const voiceId = args['voice-id'] ?? (voice ? CHOSEN[voice] : null);
 const model = args.model ?? 'eleven_multilingual_v2';
 const dry = Boolean(args.dry);
 const force = Boolean(args.force);
 
-if (!dry && (!voice || !voiceId)) {
-  console.error('الاستخدام: npx tsx scripts/generate-voice.mjs --voice=male --voice-id=<id>');
+if (!dry && !voice) {
+  console.error('الاستخدام: npx tsx scripts/generate-voice.mjs --voice=male [--voice-id=<id>]');
+  process.exit(1);
+}
+if (!dry && !voiceId) {
+  console.error(
+    `لا صوت معتمد لـ«${voice}» بعد. مرّر --voice-id=<id> أو سجّله في CHOSEN داخل هذا الملف.`,
+  );
   process.exit(1);
 }
 if (voice && !['male', 'female'].includes(voice)) {

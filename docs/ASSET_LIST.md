@@ -88,10 +88,19 @@ TTS يعمل اليوم كحل مؤقت وجودته تختلف بين الأج�
 **خط الإنتاج جاهز** — أمران فقط بعد اختيار الصوتين:
 
 ```bash
-npm run voice:list                       # 69 جملة بمعرّفاتها ونصوصها
-ELEVENLABS_API_KEY=xxx npm run voice:generate -- --voice=male   --voice-id=<id>
+npm run voice:list                                              # 69 جملة بمعرّفاتها
+ELEVENLABS_API_KEY=xxx npm run voice:generate -- --voice=male    # Hugo — معتمد
 ELEVENLABS_API_KEY=xxx npm run voice:generate -- --voice=female --voice-id=<id>
 ```
+
+الصوت المعتمد مسجَّل في `CHOSEN` داخل `scripts/generate-voice.mjs` لا في هذه
+الوثيقة: الأمر الذي يولّد الملفات هو الذي يجب أن يعرفه، ونسيان تمريره كان
+سيولّد 69 ملفًّا بصوت خاطئ قبل أن يلاحظ أحد.
+
+| الصوت | المعرّف | الحالة |
+|---|---|---|
+| رجل | `Hugo` | ✅ معتمد |
+| امرأة | — | بانتظار الاختيار من Chloe · Nora · Elena · Hana |
 
 ثم يُقلب `hasRecordedVoice` إلى `true`.
 
