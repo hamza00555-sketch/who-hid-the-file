@@ -36,10 +36,14 @@ export const GAME_CONFIG = {
   slotNaming: 'nights' as SlotNaming,
 
   /**
-   * اجعلها `true` بعد وضع التسجيلات البشرية في `public/audio/`.
+   * اجعلها `true` بعد وضع التسجيلات في `public/audio/{male|female}/`.
    * ما دامت `false` لا يحاول المدير جلب الملفات إطلاقًا ويكتفي بـ TTS.
+   *
+   * النوع `boolean` صراحةً لا `false`: الملف كلّه `as const`، فبدون التصريح
+   * يستنتج TypeScript النوع الحرفي `false` — ويصير قلب العلم إلى `true` خطأ
+   * ترجمة، ومقارنته بـ`true` في أي اختبار مستحيلة.
    */
-  hasRecordedVoice: false,
+  hasRecordedVoice: false as boolean,
 
   defaults: {
     diceMode: 'digital' as 'digital' | 'physical',
