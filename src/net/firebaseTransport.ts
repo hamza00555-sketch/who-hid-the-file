@@ -71,6 +71,7 @@ export class FirebaseTransport implements RoomTransport {
       phase: 'lobby',
       resumePhase: null,
       roundId: newRoundId(),
+      phaseEndsAt: null,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       status: 'open',
@@ -287,6 +288,10 @@ export class FirebaseTransport implements RoomTransport {
       resumePhase: phase === 'paused' ? (currentSnapshot.val() as Phase) : null,
       updatedAt: serverTimestamp(),
     });
+  }
+
+  async setPhaseDeadline(code: string, endsAt: number | null): Promise<void> {
+    await update(ref(db(), `${room(code)}/meta`), { phaseEndsAt: endsAt });
   }
 
   async updateSettings(code: string, patch: Partial<RoomSettings>): Promise<void> {

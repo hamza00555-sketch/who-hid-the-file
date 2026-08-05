@@ -69,6 +69,8 @@ export interface RoomTransport {
   ): () => void;
 
   setPhase(code: string, phase: Phase): Promise<void>;
+  /** لحظة انتهاء عدّ المرحلة، أو `null` لمسحه. */
+  setPhaseDeadline(code: string, endsAt: number | null): Promise<void>;
   updateSettings(code: string, patch: Partial<RoomSettings>): Promise<void>;
   updatePlayer(code: string, playerId: string, patch: Partial<PlayerPublic>): Promise<void>;
   setSeats(code: string, seats: Record<string, number>): Promise<void>;

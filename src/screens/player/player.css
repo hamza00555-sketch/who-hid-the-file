@@ -284,6 +284,108 @@
 }
 
 /*
+  ── لوحة الليل ──
+
+  الشاشة السوداء التامّة كانت قرارًا مقصودًا، لكنها تُقرأ كعطل: من يرفع جهازه
+  ليتأكّد أن اللعبة تعمل يجد سوادًا. ما هنا **واحد على كل الأجهزة** — اسم
+  اللعبة، رقم الليلة، ما بقي من العدّ — فلا يكشف من مستيقظ ومن نائم.
+
+  الخفوت مقصود: الجهاز مقلوب على الطاولة، وهذه اللوحة لمن يرفعه في موعده.
+*/
+.night-hud {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+  max-width: 26rem;
+  min-height: 70dvh;
+  margin-inline: auto;
+  justify-content: center;
+  text-align: center;
+  /*
+    القياس على خلفية الليل (#04070f) أعطى 0.55 نتيجةَ 2.91:1 للسطر الصغير —
+    تحت الحدّ. رُفعت إلى 0.66 وأُلغيت الشفافية التي كانت تخصم منها مرّة أخرى:
+    خفوت الليل يأتي من صغر الحجم وقلّة المحتوى لا من نصّ لا يُقرأ.
+  */
+  color: oklch(0.66 0.03 250);
+}
+
+.night-hud__game {
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+}
+
+.night-hud__slot {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 7vw, 2.4rem);
+  font-weight: 900;
+  color: oklch(0.68 0.05 250);
+}
+
+/* العدّاد أرقام لاتينية: العزل يمنع انقلابها داخل تخطيط عربي */
+.night-hud__timer {
+  unicode-bidi: isolate;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 13vw, 4rem);
+  font-weight: 900;
+  line-height: 1;
+  color: oklch(0.62 0.06 250);
+  font-variant-numeric: tabular-nums;
+}
+
+.night-hud__idle {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/*
+  دور اللاعب: هذه هي الحالة الوحيدة التي تختلف بين جهاز وآخر، وهي مقصودة —
+  ومن يقرؤها هو وحده من فتح عينيه بأمر الراوي.
+*/
+.night-hud--mine {
+  color: oklch(0.84 0.02 250);
+}
+
+.night-hud--mine .night-hud__slot {
+  color: var(--amber);
+}
+
+.night-hud--mine .night-hud__timer {
+  color: oklch(0.86 0.02 250);
+}
+
+.night-hud__turn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+  margin-top: var(--s-2);
+  padding: var(--s-3);
+  border: 2px solid var(--amber);
+  border-radius: var(--r-lg);
+  background: oklch(0.2 0.05 262 / 0.7);
+}
+
+.night-hud__badge {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  color: var(--amber);
+}
+
+.night-hud__task {
+  margin: 0;
+  font-size: 0.95rem;
+  color: oklch(0.84 0.02 250);
+  max-width: 34ch;
+}
+
+/*
   ── المستيقظ وحده أثناء الليل ──
 
   رموز الليل تُخفت النص عمدًا (‎--text‎ إلى 0.62) لأن أحدًا لا يُفترض أن يقرأ.

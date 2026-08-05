@@ -30,6 +30,7 @@ export function HostPlayerPanel({
   progress,
   nightSlot,
   secretResolved,
+  endsAt,
 }: {
   code: string;
   me: PlayerPublic;
@@ -40,6 +41,7 @@ export function HostPlayerPanel({
   progress: Record<string, PlayerProgress>;
   nightSlot: WakeSlot | null;
   secretResolved: boolean;
+  endsAt: number | null;
 }) {
   const { transport } = useSession();
   const mine = progress[me.id];
@@ -91,6 +93,7 @@ export function HostPlayerPanel({
           players={players}
           settings={settings}
           slot={nightSlot}
+          endsAt={endsAt}
         />
       );
     }

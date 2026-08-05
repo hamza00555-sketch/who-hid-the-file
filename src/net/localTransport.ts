@@ -137,6 +137,7 @@ export class LocalTransport implements RoomTransport {
         phase: 'lobby',
         resumePhase: null,
         roundId: newRoundId(),
+        phaseEndsAt: null,
         createdAt: now,
         updatedAt: now,
         status: 'open',
@@ -255,6 +256,12 @@ export class LocalTransport implements RoomTransport {
       if (phase === 'paused') doc.meta.resumePhase = doc.meta.phase;
       else doc.meta.resumePhase = null;
       doc.meta.phase = phase;
+    });
+  }
+
+  async setPhaseDeadline(code: string, endsAt: number | null): Promise<void> {
+    this.mutate(code, (doc) => {
+      doc.meta.phaseEndsAt = endsAt;
     });
   }
 

@@ -1209,3 +1209,33 @@
   border-color: var(--amber);
   background: oklch(0.3 0.06 262);
 }
+
+/*
+  عطل الجولة: يعلو كل شيء لأن المضيف لن يبحث عنه — الجولة متوقّفة والطاولة
+  تنتظر. مرجانيّ لا كهرمانيّ: هذا خلل لا معلومة.
+*/
+.host-stage-error {
+  width: 100%;
+  max-width: 30rem;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-4);
+  background: oklch(0.22 0.05 262 / 0.9);
+  border: var(--stroke) solid var(--coral);
+  border-radius: var(--r-lg);
+  text-align: center;
+}
+
+.host-stage-error strong {
+  color: var(--coral);
+  font-family: var(--font-display);
+}
+
+.host-stage-error p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}

@@ -80,6 +80,7 @@ export function HostScreen() {
   });
 
   const [countdown, setCountdown] = useState<{ value: number; total: number } | null>(null);
+  const [stageError, setStageError] = useState<string | null>(null);
   const [revealStep, setRevealStep] = useState<number | null>(null);
 
   const phaseRef = useRef<Phase>(phase);
@@ -97,17 +98,24 @@ export function HostScreen() {
 
   /* ── مؤقتات المراحل: تعمل على جهاز المضيف وحده ── */
 
+  /*
+    العدّ يُنشر لحظةَ انتهائه لا ثوانيه المتبقية: كل جهاز يحسب بساعته، فلا
+    رسالة كل ثانية ولا انحراف يتراكم مع تأخّر الشبكة. من يستيقظ في موعده
+    يحتاج أن يرى كم بقي له قبل «أغلقوا أعينكم».
+  */
   const runCountdown = useCallback(
     async (seconds: number, guard: Phase) => {
+      void transport.setPhaseDeadline(code, Date.now() + seconds * 1000);
       for (let value = seconds; value > 0; value--) {
         if (phaseRef.current !== guard) return false;
         setCountdown({ value, total: seconds });
         await wait(1000);
       }
       setCountdown(null);
+      void transport.setPhaseDeadline(code, null);
       return phaseRef.current === guard;
     },
-    [],
+    [transport, code],
   );
 
   const runKey = `${roundId}:${phase}`;
@@ -120,7 +128,17 @@ export function HostScreen() {
     const guard = phase;
     const still = () => phaseRef.current === guard;
 
+    /*
+      كل انتقالات المراحل تجري داخل هذه الدالة. أي رفض داخلها — كتابة تفشل،
+      شبكة تتعثّر، قاعدة ترفض — كان يبتلعه الوعد بلا أثر: تتوقف الجولة عند
+      مرحلتها، وتبقى شاشات اللاعبين على آخر ما رسمته بلا كلمة تفسّر. وهذا
+      بالضبط شكل العطل: «انتهى الليل والشاشات ما زالت فارغة».
+
+      الآن يُلتقط الخطأ ويُعرض للمضيف مع زر إعادة محاولة، فالجولة تُستأنف بدل
+      أن تموت صامتة.
+    */
     void (async () => {
+      try {
       if (guard === 'night-intro') {
         await narrator.say(narrator.script.nightStart);
         if (still()) await transport.setPhase(code, 'night-phase-1');
@@ -183,6 +201,9 @@ export function HostScreen() {
         );
         await wait(3200);
         if (still()) await transport.setPhase(code, 'results');
+      }
+      } catch (cause) {
+        setStageError(cause instanceof Error ? cause.message : String(cause));
       }
     })();
   }, [
@@ -397,6 +418,26 @@ export function HostScreen() {
 
       <main className="screen__body host-body">
         {/*
+          الجولة تتوقّف صامتة إن رُفضت كتابة أو تعثّرت شبكة. إظهار السبب مع زر
+          إعادة محاولة يحوّل «الشاشات فاضية ولا أحد يعرف لماذا» إلى عطل مرئي
+          قابل للتجاوز.
+        */}
+        {stageError && (
+          <div className="host-stage-error" role="alert">
+            <strong>تعثّرت الجولة</strong>
+            <p>{stageError}</p>
+            <Button
+              onClick={() => {
+                setStageError(null);
+                startedRef.current = '';
+                void transport.setPhase(code, phase);
+              }}
+            >
+              أعد المحاولة
+            </Button>
+          </div>
+        )}
+        {/*
           المضيف لاعب أيضًا: شاشته الخاصة تسبق مشهد الجمهور لأنها الإجراء
           المطلوب منه الآن، ومشهد الجمهور حالةٌ يقرؤها من حوله.
         */}
@@ -411,6 +452,7 @@ export function HostScreen() {
             progress={state.progress}
             nightSlot={slotOfNightPhase(phase)}
             secretResolved={state.meta.secretStage === 'resolved'}
+            endsAt={state.meta.phaseEndsAt ?? null}
           />
         )}
 

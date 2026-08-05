@@ -2,7 +2,7 @@
  * مشاهد جهاز اللاعب. كل شاشة: معلومة واحدة وزر رئيسي واحد.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { GAME_CONFIG, slotLabel } from '../../config/game.config';
 import { characterById, type CharacterState } from '../../game/roster';
 import { chooseSlot, submitPhysicalDice } from '../../game/deal';
@@ -386,6 +386,7 @@ export function PlayerNightStage({
   players,
   settings,
   slot,
+  endsAt,
 }: {
   code: string;
   me: PlayerPublic;
@@ -393,36 +394,119 @@ export function PlayerNightStage({
   players: PlayerPublic[];
   settings: RoomSettings;
   slot: WakeSlot | null;
+  endsAt: number | null;
 }) {
   const view = nightViewFor(secret, slot, players.length, settings.diceMode);
+  const myTurn = slot != null && (secret?.effectiveSlots.includes(slot) ?? false);
 
-  if (view === 'pick' && secret) {
-    return (
-      <NightInspect code={code} me={me} secret={secret} players={players} settings={settings} />
-    );
-  }
-
-  /* نتيجة الفحص تصل أثناء الليل نفسه، فتُعرض قبل أن يُغلق عينيه */
-  if (view === 'revealed' && secret) {
-    return <NightInspectResult secret={secret} players={players} settings={settings} />;
-  }
-
-  if (view === 'waiting') {
-    return (
-      <div className="night-awake">
-        <WaitingNote>جارٍ كشف الموعد</WaitingNote>
-      </div>
-    );
-  }
+  const inner = (() => {
+    if (view === 'pick' && secret) {
+      return (
+        <NightInspect code={code} me={me} secret={secret} players={players} settings={settings} />
+      );
+    }
+    /* نتيجة الفحص تصل أثناء الليل نفسه، فتُعرض قبل أن يُغلق عينيه */
+    if (view === 'revealed' && secret) {
+      return <NightInspectResult secret={secret} players={players} settings={settings} />;
+    }
+    if (view === 'waiting') return <WaitingNote>جارٍ كشف الموعد</WaitingNote>;
+    return null;
+  })();
 
   return (
-    <div className="night-blackout" aria-hidden="true">
-      <span className="night-blackout__dot" />
-      <p className="sr-only" aria-hidden="false">
-        الليل جارٍ. استمع إلى الجهاز الرئيسي ولا تلمس هذا الجهاز.
-      </p>
+    <NightHud slot={slot} endsAt={endsAt} settings={settings} myTurn={myTurn} secret={secret}>
+      {inner}
+    </NightHud>
+  );
+}
+
+/**
+ * ما يبقى على شاشة اللاعب طوال الليل.
+ *
+ * الشاشة السوداء التامّة كانت قرارًا مقصودًا — «الجهاز مقلوب فلا شيء يُعرض» —
+ * لكنها تُقرأ كعطل: من يرفع جهازه ليتأكّد أن اللعبة تعمل يجد سوادًا. والمعلومة
+ * الظاهرة هنا **واحدة على كل الأجهزة** (اسم اللعبة، رقم الليلة، ما بقي من
+ * العدّ)، فلا تكشف من مستيقظ ومن نائم.
+ *
+ * ما يختلف بين جهاز وآخر هو ما تحت الخطّ: تعليمة الدور لمن جاء موعده. وذلك
+ * مقصود ومطلوب — ومن يقرؤه هو وحده من فتح عينيه بأمر الراوي.
+ */
+function NightHud({
+  slot,
+  endsAt,
+  settings,
+  myTurn,
+  secret,
+  children,
+}: {
+  slot: WakeSlot | null;
+  endsAt: number | null;
+  settings: RoomSettings;
+  myTurn: boolean;
+  secret: PlayerSecret | null;
+  children: ReactNode;
+}) {
+  const remaining = useCountdown(endsAt);
+
+  return (
+    <div className={`night-hud ${myTurn ? 'night-hud--mine' : ''}`}>
+      <p className="night-hud__game">{settings.gameName}</p>
+
+      {slot ? (
+        <h2 className="night-hud__slot">{slotLabel(slot, settings.slotNaming)}</h2>
+      ) : (
+        <h2 className="night-hud__slot">الليل يبدأ</h2>
+      )}
+
+      {remaining != null && (
+        <p className="night-hud__timer" dir="ltr" aria-label={`بقي ${remaining} ثانية`}>
+          {remaining}
+        </p>
+      )}
+
+      {myTurn ? (
+        <div className="night-hud__turn">
+          <p className="night-hud__badge">هذه ليلتك</p>
+          <p className="night-hud__task">{nightTask(secret, settings)}</p>
+        </div>
+      ) : (
+        <p className="night-hud__idle">أغمض عينيك واستمع</p>
+      )}
+
+      {children}
     </div>
   );
+}
+
+/** ما على اللاعب فعله في موعده — بكلماته لا بمصطلح الكود. */
+function nightTask(secret: PlayerSecret | null, settings: RoomSettings): string {
+  if (secret?.role === 'hider') {
+    return `افتح عينيك، خذ ${GAME_CONFIG.prop.nameWithArticle} من وسط الطاولة وأخفِه.`;
+  }
+  if (settings.diceMode === 'physical') {
+    return 'افتح عينيك وتعرّف على من استيقظ معك. وإن كنت وحدك، ارفع كوب أحد جاريك.';
+  }
+  return 'افتح عينيك وتعرّف على من استيقظ معك.';
+}
+
+/**
+ * الثواني المتبقية من لحظة نهاية مُزامَنة.
+ *
+ * الحساب من *اللحظة* لا من عدّاد محلّي: جهاز تأخّر عن الشبكة أو نام ثانيتين
+ * يعود إلى الرقم الصحيح فورًا بدل أن يتأخّر عن الطاولة إلى الأبد.
+ */
+function useCountdown(endsAt: number | null): number | null {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (endsAt == null) return;
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), 250);
+    return () => window.clearInterval(timer);
+  }, [endsAt]);
+
+  if (endsAt == null) return null;
+  return Math.max(0, Math.ceil((endsAt - now) / 1000));
 }
 
 /** اختيار الجار أثناء الليل — خياران لا ثالث لهما. */
