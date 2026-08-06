@@ -10,6 +10,7 @@
  */
 
 import { GAME_CONFIG } from '../config/game.config';
+import { hydrateSecret, hydrateSecrets } from '../game/deal';
 import { EMPTY_PROGRESS, newRoundId } from '../game/types';
 import type {
   Phase,
@@ -38,6 +39,38 @@ interface LocalDoc {
 
 function key(code: string) {
   return `${KEY_PREFIX}${code.toUpperCase()}`;
+}
+
+/**
+ * يحاكي ما تفعله Firebase بالقيم قبل تخزينها: تحذف كل حقل قيمته `null` وتحذف
+ * المصفوفة الفارغة كاملةً.
+ *
+ * ── لماذا نُفسد التخزين المحلّي عمدًا ──
+ *
+ * هذا النقل موجود ليكون **بروفة** للنقل الحقيقي. وكونه أكرم منه — يحفظ كل شيء
+ * لأنه يمرّ عبر JSON — هو ما جعل عطلًا كاملًا يمرّ من كل الاختبارات ومن كل
+ * قيادة آلية للجولة، ولا يظهر إلا في جولة حقيقية على الشبكة: شاشات تُفرَّغ،
+ * وجولة تقف عند التصويت.
+ *
+ * فليُخطئ محلّيًا بنفس الطريقة، وليُرمَّم عند القراءة بنفس الدالة.
+ */
+function stripLikeFirebase<T>(value: T): T {
+  const strip = (input: unknown): unknown => {
+    if (Array.isArray(input)) {
+      const kept = input.map(strip).filter((item) => item !== undefined);
+      return kept.length === 0 ? undefined : kept;
+    }
+    if (input && typeof input === 'object') {
+      const out: Record<string, unknown> = {};
+      for (const [name, child] of Object.entries(input)) {
+        const kept = strip(child);
+        if (kept !== undefined) out[name] = kept;
+      }
+      return Object.keys(out).length === 0 ? undefined : out;
+    }
+    return input === null ? undefined : input;
+  };
+  return strip(value) as T;
 }
 
 function readDoc(code: string): LocalDoc | null {
@@ -247,7 +280,8 @@ export class LocalTransport implements RoomTransport {
     onChange: (secret: PlayerSecret | null) => void,
   ): () => void {
     return this.subscribe(code, () => {
-      onChange(readDoc(code)?.secrets[playerId] ?? null);
+      const stored = readDoc(code)?.secrets[playerId];
+      onChange(stored ? hydrateSecret(stored, playerId) : null);
     });
   }
 
@@ -293,25 +327,25 @@ export class LocalTransport implements RoomTransport {
 
   async writeSecrets(code: string, secrets: Record<string, PlayerSecret>): Promise<void> {
     this.mutate(code, (doc) => {
-      doc.secrets = secrets;
+      doc.secrets = stripLikeFirebase(secrets);
     });
   }
 
   async writeSecret(code: string, playerId: string, secret: PlayerSecret): Promise<void> {
     this.mutate(code, (doc) => {
-      doc.secrets[playerId] = secret;
+      doc.secrets[playerId] = stripLikeFirebase(secret);
     });
   }
 
   async readSecrets(code: string): Promise<Record<string, PlayerSecret>> {
-    return readDoc(code)?.secrets ?? {};
+    return hydrateSecrets(readDoc(code)?.secrets ?? {});
   }
 
   watchAllSecrets(
     code: string,
     onChange: (secrets: Record<string, PlayerSecret>) => void,
   ): () => void {
-    return this.subscribe(code, () => onChange(readDoc(code)?.secrets ?? {}));
+    return this.subscribe(code, () => onChange(hydrateSecrets(readDoc(code)?.secrets ?? {})));
   }
 
   async ack(

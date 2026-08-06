@@ -22,16 +22,47 @@ export interface AudioSettings {
   volume: number;
   /** أي راوٍ مسجَّل يُستعمل — يحدّد المجلّد تحت `public/audio/` */
   voice: NarratorVoice;
+  /** التسجيلات المعتمدة أم صوت الجهاز الآلي */
+  source: NarratorSource;
 }
+
+export type NarratorSource = 'recorded' | 'tts';
+
+/*
+  ملف صوتي صامت صالح (WAV بلا عيّنات). يُشغَّل مرّة داخل لمسة المستخدم ليفتح
+  الإذن — راجع `unlock`.
+*/
+const SILENCE =
+  'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
 
 export class AudioManager {
   private queue: VoiceLine[] = [];
   private speaking = false;
   private cancelled = false;
   private captionListeners = new Set<CaptionListener>();
-  private currentAudio: HTMLAudioElement | null = null;
   private availableFiles = new Map<string, boolean>();
-  private settings: AudioSettings = { enabled: true, rate: 0.82, volume: 1, voice: 'male' };
+  private settings: AudioSettings = {
+    enabled: true,
+    rate: 0.82,
+    volume: 1,
+    voice: 'male',
+    source: 'recorded',
+  };
+
+  /*
+    ── عنصر صوت واحد لكل الجمل ──
+
+    كان لكل جملة `new Audio(src)` خاصّ بها، وهذا لا يعمل على iOS: المتصفح
+    يسمح بالتشغيل لعنصرٍ **فُتح إذنه داخل لمسة مستخدم**، وكل عنصر جديد
+    يُنشأ بعدها يبدأ مقفلًا. النتيجة راوٍ يسكت في أغلب الجمل بلا خطأ ظاهر —
+    لأن `play()` تُرجع وعدًا مرفوضًا كنّا نبتلعه.
+
+    فعنصر واحد يُفتح إذنه مرّة، ثم يُبدَّل `src` فيه لكل جملة.
+  */
+  private element: HTMLAudioElement | null = null;
+  private unlocked = false;
+  /** رُفض تشغيل التسجيلات فعليًا — لا تُعاد المحاولة كل جملة */
+  private recordedBlocked = false;
 
   /** هل يوجد أي محرك نطق أصلًا؟ تُستخدم لعرض تحذير للمضيف. */
   static ttsAvailable(): boolean {
@@ -39,7 +70,41 @@ export class AudioManager {
   }
 
   configure(settings: Partial<AudioSettings>) {
+    // تبديل الراوي يستحق محاولة جديدة: القفل قد يكون خصّ الصوت السابق وحده
+    if (settings.source && settings.source !== this.settings.source) {
+      this.recordedBlocked = false;
+    }
     this.settings = { ...this.settings, ...settings };
+  }
+
+  /**
+   * يفتح إذن الصوت. **يجب أن يُنادى من داخل معالج لمسة أو ضغطة**، وإلا رفضه
+   * المتصفح بصمت. النداء المتكرر بلا كلفة.
+   */
+  unlock(): void {
+    if (this.unlocked || typeof window === 'undefined') return;
+    const element = this.ensureElement();
+    element.src = SILENCE;
+    element.play().then(
+      () => {
+        this.unlocked = true;
+      },
+      () => {
+        /* لمسة أخرى ستأتي — الزر التالي في اللعبة */
+      },
+    );
+  }
+
+  get audioUnlocked(): boolean {
+    return this.unlocked;
+  }
+
+  private ensureElement(): HTMLAudioElement {
+    if (!this.element) {
+      this.element = new Audio();
+      this.element.preload = 'auto';
+    }
+    return this.element;
   }
 
   onCaption(listener: CaptionListener): () => void {
@@ -79,10 +144,7 @@ export class AudioManager {
     this.cancelled = true;
     this.queue = [];
     this.speaking = false;
-    if (this.currentAudio) {
-      this.currentAudio.pause();
-      this.currentAudio = null;
-    }
+    if (this.element) this.element.pause();
     if (AudioManager.ttsAvailable()) window.speechSynthesis.cancel();
   }
 
@@ -90,13 +152,19 @@ export class AudioManager {
     return this.speaking;
   }
 
+  /**
+   * جملة واحدة: التسجيل أولًا، والصوت الآلي احتياطًا **لهذه الجملة نفسها**.
+   *
+   * السقوط إلى الاحتياط لا إلى الصمت هو الفرق كلّه: راوٍ آليّ خشن أفضل من
+   * جملة تمرّ بلا صوت والطاولة تنتظر أمرًا لم يُقَل.
+   */
   private async speakLine(line: VoiceLine): Promise<void> {
     if (!this.settings.enabled) return;
 
     const src = this.srcFor(line);
     if (src && (await this.hasFile(src))) {
-      await this.playFile(src);
-      return;
+      if (await this.playFile(src)) return;
+      this.recordedBlocked = true;
     }
     await this.speakTts(line.text);
   }
@@ -110,6 +178,7 @@ export class AudioManager {
    */
   private srcFor(line: VoiceLine): string | null {
     if (!GAME_CONFIG.hasRecordedVoice || !line.audioSrc) return null;
+    if (this.settings.source !== 'recorded' || this.recordedBlocked) return null;
     return `/audio/${this.settings.voice}/${line.audioSrc}`;
   }
 
@@ -127,18 +196,51 @@ export class AudioManager {
     }
   }
 
-  private playFile(src: string): Promise<void> {
-    return new Promise((resolve) => {
-      const audio = new Audio(src);
-      audio.volume = this.settings.volume;
-      this.currentAudio = audio;
-      const done = () => {
-        this.currentAudio = null;
-        resolve();
+  /**
+   * يعيد `true` إن سُمع الملف فعلًا، و`false` إن مُنع أو تعذّر.
+   *
+   * ── الحارس الزمني ──
+   *
+   * مراحل الليل تنتظر هذا الوعد. وحدث `ended` قد لا يصل إطلاقًا: جهاز بلا
+   * مَخرج صوت، أو ملف تعثّر فكّه، أو تبويب خُفض في الخلفية. بلا حارس تتجمّد
+   * الجولة كلها عند جملة واحدة — والطاولة تنتظر أمرًا لن يأتي.
+   *
+   * المهلة من طول المقطع نفسه حين يُعرَف، وبسقف ثابت حين لا يُعرَف.
+   */
+  private playFile(src: string): Promise<boolean> {
+    const audio = this.ensureElement();
+    audio.volume = this.settings.volume;
+    audio.src = src;
+
+    return new Promise<boolean>((resolve) => {
+      let settled = false;
+      let guard = window.setTimeout(() => finish(true), 9000);
+
+      function finish(ok: boolean) {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(guard);
+        audio.onended = null;
+        audio.onerror = null;
+        audio.onloadedmetadata = null;
+        resolve(ok);
+      }
+
+      audio.onended = () => finish(true);
+      audio.onerror = () => finish(false);
+      audio.onloadedmetadata = () => {
+        if (settled || !Number.isFinite(audio.duration)) return;
+        window.clearTimeout(guard);
+        guard = window.setTimeout(() => finish(true), audio.duration * 1000 + 1500);
       };
-      audio.onended = done;
-      audio.onerror = done;
-      audio.play().catch(done);
+
+      audio.play().then(
+        () => {
+          this.unlocked = true;
+        },
+        // الرفض هنا هو حظر التشغيل التلقائي — لا صمت بل عودة إلى الاحتياط
+        () => finish(false),
+      );
     });
   }
 

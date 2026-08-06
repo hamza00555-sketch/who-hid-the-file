@@ -34,6 +34,7 @@ const DEFAULT_SETTINGS: RoomSettings = {
   voiceEnabled: GAME_CONFIG.defaults.voiceEnabled,
   hostPlays: GAME_CONFIG.defaults.hostPlays,
   narratorVoice: GAME_CONFIG.defaults.narratorVoice,
+  narratorSource: GAME_CONFIG.defaults.narratorSource,
   ttsRate: GAME_CONFIG.defaults.ttsRate,
 };
 

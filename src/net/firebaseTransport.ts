@@ -20,6 +20,7 @@ import {
   update,
 } from 'firebase/database';
 import { GAME_CONFIG } from '../config/game.config';
+import { hydrateSecret, hydrateSecrets } from '../game/deal';
 import { EMPTY_PROGRESS, newRoundId } from '../game/types';
 import type {
   Phase,
@@ -276,7 +277,8 @@ export class FirebaseTransport implements RoomTransport {
   ): () => void {
     return onValue(
       ref(db(), `${room(code)}/round/secrets/${playerId}`),
-      (snapshot) => onChange(snapshot.exists() ? (snapshot.val() as PlayerSecret) : null),
+      // ‏Firebase يحذف الـ‏null والمصفوفة الفارغة — راجع hydrateSecret
+      (snapshot) => onChange(snapshot.exists() ? hydrateSecret(snapshot.val(), playerId) : null),
       () => onChange(null),
     );
   }
@@ -327,7 +329,7 @@ export class FirebaseTransport implements RoomTransport {
 
   async readSecrets(code: string): Promise<Record<string, PlayerSecret>> {
     const snapshot = await get(ref(db(), `${room(code)}/round/secrets`));
-    return snapshot.exists() ? (snapshot.val() as Record<string, PlayerSecret>) : {};
+    return snapshot.exists() ? hydrateSecrets(snapshot.val()) : {};
   }
 
   watchAllSecrets(
@@ -336,7 +338,7 @@ export class FirebaseTransport implements RoomTransport {
   ): () => void {
     return onValue(
       ref(db(), `${room(code)}/round/secrets`),
-      (snapshot) => onChange(snapshot.exists() ? snapshot.val() : {}),
+      (snapshot) => onChange(snapshot.exists() ? hydrateSecrets(snapshot.val()) : {}),
       () => onChange({}),
     );
   }

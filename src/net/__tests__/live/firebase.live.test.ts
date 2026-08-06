@@ -40,6 +40,7 @@ const SETTINGS: RoomSettings = {
   voiceEnabled: true,
   hostPlays: false,
   narratorVoice: 'male',
+  narratorSource: 'recorded',
   ttsRate: 1,
 };
 

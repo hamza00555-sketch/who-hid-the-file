@@ -80,6 +80,7 @@ export function HostScreen() {
     rate: settings?.ttsRate ?? GAME_CONFIG.defaults.ttsRate,
     naming: settings?.slotNaming ?? GAME_CONFIG.slotNaming,
     voice: settings?.narratorVoice ?? GAME_CONFIG.defaults.narratorVoice,
+    source: settings?.narratorSource ?? GAME_CONFIG.defaults.narratorSource,
   });
 
   const [countdown, setCountdown] = useState<{ value: number; total: number } | null>(null);
@@ -91,6 +92,8 @@ export function HostScreen() {
   const startedRef = useRef<string>('');
   /** وصل اختيار المُخفي لمتعاونيه — يُنهي عدّ الخطوة قبل وقته */
   const accompliceReadyRef = useRef(false);
+  /** جولة أُطلق كشفها — يمنع حساب النتيجة مرّتين */
+  const revealedRoundRef = useRef<string>('');
 
   const disconnected = players.filter((player) => !player.connected);
   const isNight = phase.startsWith('night-');
@@ -278,11 +281,24 @@ export function HostScreen() {
       }
     }
 
+    /*
+      وصول كل الأصوات لا يعني أن الكشف سينجح: حساب النتيجة يقرأ كل الأسرار
+      ويكتب صفحةً كاملة، وأي رفض هنا كان يُبتلع في وعد بلا `catch` — فتقف
+      الجولة عند «٤ من ٤ صوّتوا» إلى الأبد بلا رسالة.
+
+      الحارس يمنع أيضًا إطلاق الكشف مرّتين: هذا المراقب يعمل مع كل تغيّر حالة.
+    */
     if (phase === 'voting' && allAcked(progress, players, 'voted')) {
-      void narrator.say(narrator.script.votingComplete);
-      void revealResults(transport, code, players);
+      if (revealedRoundRef.current !== roundId) {
+        revealedRoundRef.current = roundId;
+        void narrator.say(narrator.script.votingComplete);
+        void revealResults(transport, code, players).catch((cause) => {
+          revealedRoundRef.current = '';
+          setStageError(cause instanceof Error ? cause.message : String(cause));
+        });
+      }
     }
-  }, [isHost, state, phase, players, code, transport, narrator]);
+  }, [isHost, state, phase, players, code, transport, narrator, roundId]);
 
   /* ── المرحلة السرية: تطبيق اختيار المُخفي فور وصوله ── */
 

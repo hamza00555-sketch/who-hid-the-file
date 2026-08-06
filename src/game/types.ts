@@ -124,6 +124,15 @@ export interface PlayerSecret {
 /** صوت الراوي — يختاره المضيف، ويحدّد مجلّد الجمل المسجّلة. */
 export type NarratorVoice = 'male' | 'female';
 
+/**
+ * مصدر النطق: التسجيلات المعتمدة أم صوت الجهاز الآلي.
+ *
+ * الخيار موجود لأن التسجيل قد يُمنع من التشغيل على جهاز بعينه (سياسة التشغيل
+ * التلقائي في iOS مثلًا)، فيسكت الراوي بلا سبب ظاهر لصاحب الجهاز. زرٌّ واحد
+ * يُرجعه إلى الصوت الآلي خير من جولة صامتة.
+ */
+export type NarratorSource = 'recorded' | 'tts';
+
 export interface RoomSettings {
   gameName: string;
   diceMode: DiceMode;
@@ -139,6 +148,7 @@ export interface RoomSettings {
    */
   hostPlays: boolean;
   narratorVoice: NarratorVoice;
+  narratorSource: NarratorSource;
   ttsRate: number;
 }
 

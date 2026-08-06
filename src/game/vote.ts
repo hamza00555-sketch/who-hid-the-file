@@ -85,10 +85,16 @@ export function buildResults(
           effectiveSlots: secret?.effectiveSlots ?? [],
           soloSlots: secret?.soloSlots ?? [],
           wokeWith: wokeWith(secrets, player.id),
+          /*
+            `?? null` لا زخرفة: فحصٌ طُلب ولم يُكشف يعود من Firebase بلا حقل
+            `revealedSlot` إطلاقًا (الـ‏null محذوف)، فتُكتب النتيجة وفيها
+            `undefined` — وترفضها قاعدة البيانات كاملةً. الجولة كانت تقف عند
+            التصويت بعد وصول كل الأصوات بلا رسالة واحدة.
+          */
           inspected: secret?.inspection
             ? {
                 targetId: secret.inspection.targetId,
-                revealedSlot: secret.inspection.revealedSlot,
+                revealedSlot: secret.inspection.revealedSlot ?? null,
               }
             : null,
           votedFor: votes[player.id] ?? null,

@@ -56,6 +56,7 @@ export const GAME_CONFIG = {
     voiceEnabled: true,
     hostPlays: false,
     narratorVoice: 'male' as 'male' | 'female',
+    narratorSource: 'recorded' as 'recorded' | 'tts',
     ttsRate: 0.82,
   },
 

@@ -407,6 +407,18 @@ export function PlayerNightStage({
   endsAt: number | null;
 }) {
   /*
+    ── الاختيار لا يُنقض ──
+
+    الفحص طلبٌ يُكتب على الشبكة ثم يملؤه المضيف، وبين اللحظتين تمرّ لقطات
+    قديمة على الجهاز. فكانت البطاقتان تعودان بعد الضغط فيظنّ اللاعب أن ضغطته
+    ضاعت — فيضغط الأخرى، ويظنّ أن له فحصين.
+
+    هذه الذاكرة المحلّية تُغلق الباب فور الضغط: لا يعود المُنتقي في هذه الليلة
+    مهما تأخّرت الشبكة. والمعيار هو الموعد نفسه، فليلة جديدة تفتحه من جديد.
+  */
+  const [pickedAt, setPickedAt] = useState<WakeSlot | null>(null);
+
+  /*
     ── آخر الليل ──
 
     نداء واحد للمُخفي وحده. بقية الأجهزة تبقى على لوحة الليل نفسها بلا كلمة
@@ -436,16 +448,25 @@ export function PlayerNightStage({
   const myTurn = slot != null && (secret?.effectiveSlots.includes(slot) ?? false);
 
   const inner = (() => {
-    if (view === 'pick' && secret) {
-      return (
-        <NightInspect code={code} me={me} secret={secret} players={players} settings={settings} />
-      );
-    }
     /* نتيجة الفحص تصل أثناء الليل نفسه، فتُعرض قبل أن يُغلق عينيه */
     if (view === 'revealed' && secret) {
       return <NightInspectResult secret={secret} players={players} settings={settings} />;
     }
-    if (view === 'waiting') return <WaitingNote>جارٍ كشف الموعد</WaitingNote>;
+    if (view === 'waiting' || (pickedAt != null && pickedAt === slot)) {
+      return <WaitingNote>جارٍ كشف الموعد</WaitingNote>;
+    }
+    if (view === 'pick' && secret) {
+      return (
+        <NightInspect
+          code={code}
+          me={me}
+          secret={secret}
+          players={players}
+          settings={settings}
+          onPicked={() => setPickedAt(slot)}
+        />
+      );
+    }
 
     /*
       الراوي يقول للطاولة كلها «وإذا كنتم وحدكم، اختاروا أحد جاريكم» — ولا
@@ -654,20 +675,37 @@ function NightInspect({
   secret,
   players,
   settings,
+  onPicked,
 }: {
   code: string;
   me: PlayerPublic;
   secret: PlayerSecret;
   players: PlayerPublic[];
   settings: RoomSettings;
+  onPicked: () => void;
 }) {
   const { transport } = useSession();
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const neighbours = useMemo(() => neighboursOf(me.id, players), [me.id, players]);
   const byId = useMemo(
     () => Object.fromEntries(players.map((player) => [player.id, player])),
     [players],
   );
+
+  /*
+    فور اللمس تختفي البطاقتان ويظهر الانتظار — لا بعد ردّ الشبكة.
+
+    كانتا تبقيان ظاهرتين حتى تعود اللقطة الجديدة، فيظنّ اللاعب أن ضغطته ضاعت
+    ويضغط الأخرى. والأسوأ أنه يظنّ أن له فحصين وليس له إلا واحد.
+  */
+  if (busy) {
+    return (
+      <div className="night-awake">
+        <WaitingNote>جارٍ كشف الموعد</WaitingNote>
+      </div>
+    );
+  }
 
   return (
     <div className="night-awake">
@@ -685,6 +723,8 @@ function NightInspect({
               player={target}
               status={side === 'right' ? 'الجالس عن يمينك' : 'الجالس عن يسارك'}
               onSelect={async () => {
+                if (busy) return;
+                setBusy(true);
                 try {
                   // هذا الجهاز لا يملك موعد الجار: يكتب الطلب، والمضيف يملأ الموعد.
                   await transport.writeSecret(code, me.id, {
@@ -692,7 +732,10 @@ function NightInspect({
                     inspection: { targetId: target.id, side, revealedSlot: null },
                   });
                   setError(null);
+                  onPicked();
                 } catch (cause) {
+                  // الفشل يُعيد البطاقتين: الخيار لم يُسجَّل، ولا يجوز أن يضيع
+                  setBusy(false);
                   setError(cause instanceof Error ? cause.message : 'تعذّر الفحص.');
                 }
               }}

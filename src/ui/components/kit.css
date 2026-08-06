@@ -360,3 +360,34 @@
     transform: translateY(-4px);
   }
 }
+
+/*
+  ── حارس الشاشة ──
+
+  يظهر حين تنهار شجرة العرض. لا يستعمل رموز اللعبة الغامقة عمدًا: قد يكون
+  الانهيار نفسه في تحميل الرموز، فيبقى مقروءًا بأبسط ما يمكن.
+*/
+.screen--guard {
+  min-height: 100dvh;
+  background: var(--night-deep, #0b1122);
+}
+
+.screen-guard {
+  gap: var(--s-3);
+  max-width: 30rem;
+  margin-inline: auto;
+  text-align: center;
+  justify-content: center;
+  min-height: 100dvh;
+}
+
+.screen-guard__reason {
+  width: 100%;
+  margin: 0;
+  padding: var(--s-3);
+  border-radius: var(--r-md);
+  background: oklch(0.22 0.05 262);
+  color: oklch(0.84 0.02 250);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}

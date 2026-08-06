@@ -39,6 +39,73 @@ export function emptySecret(playerId: string): PlayerSecret {
 }
 
 /**
+ * يُعيد بناء سرٍّ قادم من الشبكة إلى شكله الكامل.
+ *
+ * ── لماذا يلزم هذا أصلًا ──
+ *
+ * قاعدة Firebase Realtime **تحذف كل حقل قيمته `null`، وتحذف المصفوفة الفارغة
+ * كاملةً**. فالسرّ الذي يُكتب هكذا:
+ *
+ *   { dice: [3,5], effectiveSlots: [], soloSlots: [], inspection: null, … }
+ *
+ * يعود من الشبكة هكذا:
+ *
+ *   { dice: [3,5] }
+ *
+ * وكل ما يليه ينهار: `secret.effectiveSlots.includes(slot)` ترمي TypeError
+ * فتُفرَّغ شاشة اللاعب حتى يُحدِّث الصفحة، و`buildResults` تكتب `undefined`
+ * فيرفضها Firebase وتقف الجولة عند التصويت بلا كلمة.
+ *
+ * ولا يظهر شيء من هذا في التطوير المحلّي: النقل المحلّي يمرّ عبر JSON فيحفظ
+ * القيم كما هي. الفرق كلّه في حدود الشبكة — فهنا مكان علاجه، مرّة واحدة عند
+ * كل قراءة، لا عشرين حارسًا `?.` متفرّقة في الشاشات.
+ */
+export function hydrateSecret(raw: unknown, playerId: string): PlayerSecret {
+  const base = emptySecret(playerId);
+  if (!raw || typeof raw !== 'object') return base;
+  const value = raw as Partial<PlayerSecret> & Record<string, unknown>;
+
+  /* المصفوفة قد تعود كائنًا بمفاتيح رقمية إن كانت متقطّعة */
+  const list = <T,>(input: unknown): T[] => {
+    if (Array.isArray(input)) return input.filter((item) => item != null) as T[];
+    if (input && typeof input === 'object') return Object.values(input) as T[];
+    return [];
+  };
+
+  return {
+    ...base,
+    playerId: typeof value.playerId === 'string' ? value.playerId : playerId,
+    role: value.role ?? base.role,
+    dice: list<WakeSlot>(value.dice),
+    chosenSlot: value.chosenSlot ?? null,
+    effectiveSlots: list<WakeSlot>(value.effectiveSlots),
+    soloSlots: list<WakeSlot>(value.soloSlots),
+    inspection: value.inspection
+      ? {
+          targetId: value.inspection.targetId,
+          side: value.inspection.side,
+          revealedSlot: value.inspection.revealedSlot ?? null,
+        }
+      : null,
+    knownAllies: list<string>(value.knownAllies),
+    accompliceQuota: value.accompliceQuota ?? 0,
+    accompliceCandidates: list<string>(value.accompliceCandidates),
+    accompliceChoice: value.accompliceChoice ? list<string>(value.accompliceChoice) : null,
+    becameAccomplice: value.becameAccomplice === true,
+  };
+}
+
+/** يُعيد بناء خريطة أسرار كاملة قادمة من الشبكة. */
+export function hydrateSecrets(raw: unknown): SecretMap {
+  if (!raw || typeof raw !== 'object') return {};
+  const out: SecretMap = {};
+  for (const [playerId, value] of Object.entries(raw as Record<string, unknown>)) {
+    out[playerId] = hydrateSecret(value, playerId);
+  }
+  return out;
+}
+
+/**
  * يوزّع مُخفيًا واحدًا وبقية اللاعبين أعضاء فريق، ويرمي النرد.
  * المتعاونون **لا يُوزَّعون هنا** — يُحدَّدون بعد الليل (راجع accomplice.ts).
  */

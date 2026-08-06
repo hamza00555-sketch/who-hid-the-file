@@ -442,6 +442,29 @@ function SettingsPanel({
         </div>
       </fieldset>
 
+      {/*
+        مخرج للحالة التي لا يستطيع فيها الجهاز تشغيل التسجيلات — تمنعها سياسة
+        التشغيل التلقائي في بعض المتصفحات فيسكت الراوي بلا سبب ظاهر. زرٌّ
+        واحد يُرجع الصوت الآلي، وجولة بصوت خشن خير من جولة صامتة.
+      */}
+      <fieldset className="settings-panel__field">
+        <legend>مصدر النطق</legend>
+        <div className="settings-panel__choices">
+          <Choice
+            checked={settings.narratorSource !== 'tts'}
+            onChange={() => onChange({ narratorSource: 'recorded' })}
+            title="التسجيلات"
+            note="الصوت المعتمد — الأوضح"
+          />
+          <Choice
+            checked={settings.narratorSource === 'tts'}
+            onChange={() => onChange({ narratorSource: 'tts' })}
+            title="صوت الجهاز"
+            note="استعمله إذا لم تسمع الراوي"
+          />
+        </div>
+      </fieldset>
+
       <label className="settings-panel__row">
         <span>مدة العد التنازلي في كل مرحلة</span>
         <input
