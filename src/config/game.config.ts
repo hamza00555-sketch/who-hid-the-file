@@ -36,14 +36,17 @@ export const GAME_CONFIG = {
   slotNaming: 'nights' as SlotNaming,
 
   /**
-   * اجعلها `true` بعد وضع التسجيلات في `public/audio/{male|female}/`.
-   * ما دامت `false` لا يحاول المدير جلب الملفات إطلاقًا ويكتفي بـ TTS.
+   * التسجيلات موجودة في `public/audio/{male|female}/` — صوتان معتمدان بعد
+   * الاستماع: Hugo للرجل وElena للمرأة، من ElevenLabs multilingual v2.
    *
-   * النوع `boolean` صراحةً لا `false`: الملف كلّه `as const`، فبدون التصريح
-   * يستنتج TypeScript النوع الحرفي `false` — ويصير قلب العلم إلى `true` خطأ
-   * ترجمة، ومقارنته بـ`true` في أي اختبار مستحيلة.
+   * `true` تعني أن المدير يجلب الملف أولًا ويعود إلى TTS إن تعذّر — فمن يفتح
+   * اللعبة بلا شبكة أو بملف ناقص يسمع صوتًا آليًا، لا صمتًا.
+   *
+   * النوع `boolean` صراحةً لا `true`: الملف كلّه `as const`، فبدون التصريح
+   * يستنتج TypeScript النوع الحرفي — ويصير قلب العلم في أي اتجاه خطأ ترجمة،
+   * ومقارنته في أي اختبار مستحيلة.
    */
-  hasRecordedVoice: false as boolean,
+  hasRecordedVoice: true as boolean,
 
   defaults: {
     diceMode: 'digital' as 'digital' | 'physical',
