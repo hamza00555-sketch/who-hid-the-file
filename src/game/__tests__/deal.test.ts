@@ -108,10 +108,14 @@ describe('النرد الحقيقي', () => {
     expect(() => submitPhysicalDice(six.p1!, [3, 5], 6)).toThrow();
   });
 
-  it('يطبّق قاعدة المُخفي في وضع الأربعة على النرد الحقيقي أيضًا', () => {
+  it('في وضع الأربعة يختار المُخفي موعدًا واحدًا مثل الجميع', () => {
     const secrets = dealRound({ playerIds: ids(4), rng: seededRng(2), forceHiderId: 'p1' });
+
+    // نتيجتان، وموعد فعّال واحد بعد الاختيار — لا موعدان
     const hider = submitPhysicalDice(secrets.p1!, [2, 5], 4);
-    expect(hider.effectiveSlots).toEqual([2, 5]);
+    expect(hider.dice).toEqual([2, 5]);
+    expect(hider.effectiveSlots).toEqual([]);
+    expect(chooseSlot(hider, 5).effectiveSlots).toEqual([5]);
 
     const member = submitPhysicalDice(secrets.p2!, [1, 4], 4);
     expect(member.effectiveSlots).toEqual([]);

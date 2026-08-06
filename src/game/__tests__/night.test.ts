@@ -82,23 +82,24 @@ describe('اكتشاف الاستيقاظ المنفرد', () => {
     for (const secret of Object.values(secrets)) expect(secret.soloSlots).toHaveLength(1);
   });
 
-  it('يتعامل مع المُخفي المنفرد في موعد والمصحوب في آخر (وضع الأربعة)', () => {
+  it('المُخفي في وضع الأربعة يستيقظ ليلةً واحدة يختارها', () => {
     let secrets = build(4, 'p1', { p1: [2, 5], p2: [5, 6], p3: [3, 4], p4: [1, 6] });
     secrets = computeSoloSlots({
       ...secrets,
+      p1: chooseSlot(secrets.p1!, 5),
       p2: chooseSlot(secrets.p2!, 5),
       p3: chooseSlot(secrets.p3!, 3),
       p4: chooseSlot(secrets.p4!, 1),
     });
-    expect(secrets.p1!.effectiveSlots).toEqual([2, 5]);
-    expect(secrets.p1!.soloSlots).toEqual([2]); // الموعد 5 يشاركه p2
+    expect(secrets.p1!.effectiveSlots).toEqual([5]);
+    expect(secrets.p1!.soloSlots).toEqual([]); // الموعد 5 يشاركه p2
     expect(secrets.p2!.soloSlots).toEqual([]);
     expect(secrets.p3!.soloSlots).toEqual([3]);
   });
 
-  it('يستيقظ صاحب النتيجتين المتطابقتين مرة واحدة فقط', () => {
+  it('النتيجتان المتطابقتان: خيار واحد فعليًّا', () => {
     const secrets = build(4, 'p1', { p1: [3, 3], p2: [1, 5], p3: [2, 6], p4: [4, 4] });
-    expect(secrets.p1!.effectiveSlots).toEqual([3]);
+    expect(chooseSlot(secrets.p1!, 3).effectiveSlots).toEqual([3]);
     const member = chooseSlot(secrets.p4!, 4);
     expect(member.effectiveSlots).toEqual([4]);
   });
@@ -106,7 +107,7 @@ describe('اكتشاف الاستيقاظ المنفرد', () => {
   it('يمنع عضو الفريق من اختيار موعد ليس من نتائجه', () => {
     const secrets = build(4, 'p1', { p1: [3, 3], p2: [1, 5], p3: [2, 6], p4: [4, 4] });
     expect(() => chooseSlot(secrets.p2!, 6)).toThrow();
-    expect(() => chooseSlot(secrets.p1!, 3)).toThrow(); // المُخفي لا يختار
+    expect(() => chooseSlot(secrets.p1!, 6)).toThrow(); // موعد ليس من نتائجه
   });
 
   it('يحسب الانفراد في النرد الحقيقي بعد إدخال كل النتائج', () => {

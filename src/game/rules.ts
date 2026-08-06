@@ -31,7 +31,7 @@ const TABLE: Record<number, CountRules> = {
     playerCount: 4,
     dicePerPlayer: 2,
     memberChoosesSlot: true,
-    hiderUsesAllDice: true,
+    hiderUsesAllDice: false,
     accompliceCount: 0,
     accompliceMode: 'none',
     inspectionEnabled: false,

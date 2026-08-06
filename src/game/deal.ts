@@ -90,9 +90,14 @@ export function uniqueSlots(slots: readonly WakeSlot[]): WakeSlot[] {
  * يرمي خطأ إذا لم يكن الرقم ضمن نتائجه أو إذا كان اللاعب هو المُخفي.
  */
 export function chooseSlot(secret: PlayerSecret, slot: WakeSlot): PlayerSecret {
-  if (secret.role === 'hider') {
-    throw new Error('مُخفي الملف يستيقظ عند كل مواعيده ولا يختار.');
-  }
+  /*
+    المُخفي يختار مثل الجميع.
+
+    كان ممنوعًا من الاختيار لأنه كان يستيقظ عند نتيجتيه معًا في وضع الأربعة.
+    وقد صار يستيقظ ليلةً واحدة كبقية اللاعبين، فبقاء المنع كان يتركه بلا موعد
+    فعّال: لا يختار ولا يُختار له، فلا يستيقظ ولا يأخذ الملف — وتُلعب الجولة
+    كلها بلا مُخفٍ.
+  */
   if (!secret.dice.includes(slot)) {
     throw new Error(`الموعد ${slot} ليس من نتائج نرد هذا اللاعب.`);
   }

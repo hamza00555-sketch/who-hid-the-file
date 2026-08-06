@@ -134,8 +134,8 @@ export function PlayerRoleStage({
           : `اعرف من أخفى ${GAME_CONFIG.prop.nameWithArticle} قبل انتهاء التصويت.`}
       </p>
 
-      {isHider && rules.hiderUsesAllDice && (
-        <Panel tone="amber">لديك موعدان — تستطيع الاستيقاظ في كليهما.</Panel>
+      {isHider && rules.dicePerPlayer === 2 && (
+        <Panel tone="amber">ستختار موعدًا واحدًا من نتيجتيك.</Panel>
       )}
 
       <Button size="xl" full onClick={onAck}>
@@ -172,7 +172,14 @@ export function PlayerDiceStage({
   const [error, setError] = useState<string | null>(null);
 
   const rules = rulesFor(playerCount);
-  const needsChoice = rules.memberChoosesSlot && secret?.role !== 'hider';
+  /*
+    كل من يحصل على نتيجتين يختار واحدة — بما فيهم المُخفي.
+
+    كان مستثنًى لأنه كان يستيقظ عند نتيجتيه معًا. وقد صار يستيقظ ليلةً واحدة
+    مثل الجميع، فاستثناؤه يتركه بلا موعد فعّال إطلاقًا: لا يختار ولا يُختار
+    له، فلا يستيقظ ولا يأخذ الملف — وتُلعب الجولة كلها بلا مُخفٍ.
+  */
+  const needsChoice = rules.memberChoosesSlot;
 
   useEffect(() => {
     setEntries(Array.from({ length: rules.dicePerPlayer }, () => ''));
@@ -236,7 +243,7 @@ export function PlayerDiceStage({
               await transport.writeSecret(code, me.id, updated);
               setRevealed(true);
               setError(null);
-              if (!rules.memberChoosesSlot || updated.role === 'hider') {
+              if (!rules.memberChoosesSlot) {
                 await transport.ack(code, me.id, 'diceAck');
               }
             } catch (cause) {
@@ -410,6 +417,21 @@ export function PlayerNightStage({
       return <NightInspectResult secret={secret} players={players} settings={settings} />;
     }
     if (view === 'waiting') return <WaitingNote>جارٍ كشف الموعد</WaitingNote>;
+
+    /*
+      الراوي يقول للطاولة كلها «وإذا كنتم وحدكم، اختاروا أحد جاريكم» — ولا
+      يستطيع غير ذلك، فالصوت عامّ ولا يعرف من انفرد. فمن استيقظ مع غيره يسمع
+      الوعد ثم ينتظر شاشة لا تأتي، ويظنّ التطبيق معطّلًا.
+
+      السطر هنا يُغلق الفجوة: يقول له لماذا لا فحص له، ولا يكشف من كان معه.
+    */
+    if (myTurn && rulesFor(players.length).inspectionEnabled && secret) {
+      return (
+        <p className="night-hud__note">
+          استيقظ معك أحد هذه الليلة — تعرّف عليه، ولا فحص لك.
+        </p>
+      );
+    }
     return null;
   })();
 
@@ -474,6 +496,7 @@ function NightHud({
       )}
 
       {children}
+
     </div>
   );
 }

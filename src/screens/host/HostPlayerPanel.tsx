@@ -83,8 +83,17 @@ export function HostPlayerPanel({
 
         فيُسأل القرار أولًا، ولا يُرسم شيء إلا إن كان للمضيف فعل فعليّ.
       */
+      /*
+        `nightViewFor` يجيب عن سؤال واحد: هل هناك **فحص جار** يُعرض؟ وهو يعيد
+        `blackout` للمُخفي دائمًا — لأنه لا يفحص أحدًا.
+
+        استعماله وحده حارسًا كان العطل: المضيف حين يكون مُخفي الملف وتأتي
+        ليلته لا يرى شيئًا، بينما هي أهم لحظة في دوره. السؤال الصحيح هنا
+        «هل جاء موعده؟» لا «هل له فحص؟».
+      */
+      const myTurn = nightSlot != null && (secret?.effectiveSlots.includes(nightSlot) ?? false);
       const view = nightViewFor(secret, nightSlot, players.length, settings.diceMode);
-      if (view === 'blackout') return null;
+      if (!myTurn && view === 'blackout') return null;
       return (
         <PlayerNightStage
           code={code}

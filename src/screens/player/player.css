@@ -453,3 +453,11 @@
     animation: none;
   }
 }
+
+/* سطر «لا فحص لك»: يغلق الفجوة بين وعد الراوي العامّ وما يظهر فعلًا */
+.night-hud__note {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 0.95rem;
+  color: oklch(0.8 0.03 250);
+}
