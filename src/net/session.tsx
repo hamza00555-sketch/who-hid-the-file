@@ -47,6 +47,12 @@ interface SessionValue {
   transport: RoomTransport;
   playerId: string | null;
   ready: boolean;
+  /** سبب فشل فتح الهوية على هذا الجهاز، إن فشل */
+  identityError: string | null;
+  /** رمز الخطأ التقني — يُعرض صغيرًا ليُنقَل عند طلب المساعدة */
+  identityCode: string | null;
+  /** إعادة محاولة فتح الهوية */
+  retryIdentity: () => void;
 }
 
 const SessionContext = createContext<SessionValue | null>(null);
@@ -54,40 +60,87 @@ const SessionContext = createContext<SessionValue | null>(null);
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [instance, setInstance] = useState<RoomTransport | null>(null);
+  const [identityError, setIdentityError] = useState<string | null>(null);
+  const [identityCode, setIdentityCode] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
+  /*
+    ── الفشل يجب أن يُقال ──
+
+    كان الخطأ يُبتلع في `catch` فارغ: تبقى الهوية `null`، ويبقى `ready` كاذبًا،
+    وتبقى الشاشة على «جارٍ الاتصال بالجلسة» إلى الأبد. ثلاثة أصدقاء يفتحون نفس
+    الرابط، فيدخل واحد ويقف اثنان بلا كلمة تشرح ولا زر يُعيد.
+
+    الآن يُحفَظ السبب ويُعرَض، ومعه إعادة محاولة صريحة.
+  */
   useEffect(() => {
     let active = true;
-    void getTransport().then(async (loaded) => {
-      if (!active) return;
-      setInstance(loaded);
+    void (async () => {
       try {
+        const loaded = await getTransport();
+        if (!active) return;
+        setInstance(loaded);
         const id = await loaded.identify();
-        if (active) setPlayerId(id);
-      } catch {
-        if (active) setPlayerId(null);
+        if (!active) return;
+        setPlayerId(id);
+        setIdentityError(null);
+        setIdentityCode(null);
+      } catch (cause) {
+        if (!active) return;
+        setPlayerId(null);
+        setIdentityError(
+          cause instanceof Error ? cause.message : 'تعذّر فتح الجلسة على هذا الجهاز.',
+        );
+        setIdentityCode((cause as { code?: string } | null)?.code ?? null);
       }
-    });
+    })();
     return () => {
       active = false;
     };
+  }, [attempt]);
+
+  const retryIdentity = useCallback(() => {
+    setIdentityError(null);
+    setIdentityCode(null);
+    setAttempt((current) => current + 1);
   }, []);
 
   const value = useMemo<SessionValue | null>(
-    () => (instance ? { transport: instance, playerId, ready: playerId !== null } : null),
-    [instance, playerId],
+    () =>
+      instance
+        ? {
+            transport: instance,
+            playerId,
+            ready: playerId !== null,
+            identityError,
+            identityCode,
+            retryIdentity,
+          }
+        : null,
+    [instance, playerId, identityError, identityCode, retryIdentity],
   );
 
   // لا تُركَّب الشاشات قبل جاهزية النقل — تتجنب فحوصات null في كل مكان.
-  if (!value) return <BootScreen />;
+  if (!value) return <BootScreen error={identityError} onRetry={retryIdentity} />;
 
   return <SessionContext value={value}>{children}</SessionContext>;
 }
 
-function BootScreen() {
+function BootScreen({ error, onRetry }: { error: string | null; onRetry: () => void }) {
   return (
     <div className="screen">
       <div className="screen__body">
-        <p className="lede">جارٍ التحميل…</p>
+        {error ? (
+          <>
+            <h2>تعذّر فتح الجلسة</h2>
+            <p className="lede">{error}</p>
+            <button type="button" className="btn btn--md btn--primary" onClick={onRetry}>
+              أعد المحاولة
+            </button>
+          </>
+        ) : (
+          <p className="lede">جارٍ التحميل…</p>
+        )}
       </div>
     </div>
   );
@@ -108,7 +161,12 @@ export interface RoomView {
   connection: ConnectionStatus;
   loading: boolean;
   missing: boolean;
+  /** طال الانتظار بلا أي رد من الخادم */
+  stalled: boolean;
 }
+
+/** بعدها يُقال للاعب إن شيئًا لا يسير كما ينبغي، بدل دوّامة لا تنتهي */
+const STALL_AFTER_MS = 9000;
 
 /** يراقب الغرفة ويعيد نسخة جاهزة للعرض مع اللاعبين مرتّبين بالمقاعد. */
 export function useRoom(code: string | null): RoomView {
@@ -116,15 +174,27 @@ export function useRoom(code: string | null): RoomView {
   const [state, setState] = useState<RoomState | null>(null);
   const [connection, setConnection] = useState<ConnectionStatus>('connecting');
   const [loaded, setLoaded] = useState(false);
+  const [stalled, setStalled] = useState(false);
 
   useEffect(() => {
     if (!code) return;
     setLoaded(false);
+    setStalled(false);
+    /*
+      انتظارٌ بلا حدّ يُقرأ كعطل صامت. إن لم يصل شيء خلال هذه المدة فالأرجح أن
+      الاشتراك لن يصل أصلًا — والقول أفضل من دوّامة تدور إلى الأبد.
+    */
+    const timer = window.setTimeout(() => setStalled(true), STALL_AFTER_MS);
     const stop = instance.watchRoom(code, (next) => {
+      window.clearTimeout(timer);
+      setStalled(false);
       setState(next);
       setLoaded(true);
     });
-    return stop;
+    return () => {
+      window.clearTimeout(timer);
+      stop();
+    };
   }, [code, instance]);
 
   useEffect(() => instance.watchConnection(setConnection), [instance]);
@@ -143,6 +213,7 @@ export function useRoom(code: string | null): RoomView {
     connection,
     loading: !loaded,
     missing: loaded && state === null,
+    stalled,
   };
 }
 

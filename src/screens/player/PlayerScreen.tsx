@@ -32,8 +32,8 @@ import './player.css';
 export function PlayerScreen() {
   const { code = '' } = useParams();
   const navigate = useNavigate();
-  const { transport, playerId, ready } = useSession();
-  const { state, players, me, connection, loading, missing } = useRoom(code);
+  const { transport, playerId, ready, identityError, identityCode, retryIdentity } = useSession();
+  const { state, players, me, connection, loading, missing, stalled } = useRoom(code);
   const secret = useSecret(code);
 
   // الحضور يُجدَّد ما دام اللاعب هنا، لا عند الانضمام وحده
@@ -64,10 +64,46 @@ export function PlayerScreen() {
     if (hasInfo) navigator.vibrate?.([60, 90, 60]);
   }, [phase, secret]);
 
+  /*
+    ── الانتظار الذي لا ينتهي ──
+
+    كانت هذه الشاشة تقول «جارٍ الاتصال بالجلسة» إلى الأبد مهما كان السبب: هوية
+    رُفضت، أو متصفّح يمنع التخزين، أو اشتراك لم يصل. ثلاثة أصدقاء يفتحون نفس
+    الرابط فيدخل واحد ويقف اثنان أمام دوّامة لا تشرح ولا تُعيد.
+
+    الآن لكل حالة قولٌ وزر.
+  */
+  if (identityError) {
+    return (
+      <Shell>
+        <h2>تعذّر فتح الجلسة</h2>
+        <p className="lede">{identityError}</p>
+        {identityCode && <p className="eyebrow-note" dir="ltr">{identityCode}</p>}
+        <Button size="lg" onClick={retryIdentity}>
+          أعد المحاولة
+        </Button>
+        <Button tone="ghost" onClick={() => navigate('/')}>
+          الرئيسية
+        </Button>
+      </Shell>
+    );
+  }
+
   if (loading || !ready) {
     return (
       <Shell>
         <WaitingNote>جارٍ الاتصال بالجلسة</WaitingNote>
+        {stalled && (
+          <>
+            <p className="lede">
+              طال الانتظار أكثر من المعتاد. تأكد من الإنترنت، وإن كنت فتحت الرابط داخل
+              تطبيق محادثة فافتحه في متصفّح عادي.
+            </p>
+            <Button size="lg" onClick={() => window.location.reload()}>
+              أعد المحاولة
+            </Button>
+          </>
+        )}
       </Shell>
     );
   }

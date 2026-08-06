@@ -65,8 +65,9 @@ const SCENE_TONE: Partial<Record<Phase, SceneTone>> = {
 export function HostScreen() {
   const { code = '' } = useParams();
   const navigate = useNavigate();
-  const { transport, playerId } = useSession();
-  const { state, players, me, isHost, playerCount, connection, loading, missing } = useRoom(code);
+  const { transport, playerId, identityError, retryIdentity } = useSession();
+  const { state, players, me, isHost, playerCount, connection, loading, missing, stalled } =
+    useRoom(code);
   const secret = useSecret(code);
 
   // المضيف حين يلعب لاعبٌ أيضًا، فحضوره يُجدَّد مثل الجميع
@@ -412,12 +413,34 @@ export function HostScreen() {
     return `${origin}${pathname}#/play/${code}`;
   }, [code]);
 
+  /* هوية لم تُفتح: قول وزر بدل دوّامة لا تنتهي — راجع PlayerScreen */
+  if (identityError) {
+    return (
+      <div className="screen screen--host">
+        <SceneBackdrop tone="evening" />
+        <div className="screen__body">
+          <h2>تعذّر فتح الجلسة</h2>
+          <p className="lede">{identityError}</p>
+          <Button onClick={retryIdentity}>أعد المحاولة</Button>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="screen screen--host">
         <SceneBackdrop tone="evening" />
         <div className="screen__body">
           <WaitingNote>جارٍ فتح الجلسة</WaitingNote>
+          {stalled && (
+            <>
+              <p className="lede">
+                طال الانتظار أكثر من المعتاد. تأكد من الإنترنت ثم أعد المحاولة.
+              </p>
+              <Button onClick={() => window.location.reload()}>أعد المحاولة</Button>
+            </>
+          )}
         </div>
       </div>
     );

@@ -186,27 +186,56 @@ export class FirebaseTransport implements RoomTransport {
       });
     };
 
+    /*
+      كل اشتراك بمعالج خطأ. بلا معالج، رفضٌ من القواعد أو تعثّر شبكة يُنهي هذا
+      المسار بصمت فلا يصل `emit` أبدًا — و`seen` لا تكتمل، فتبقى الشاشة على
+      «جارٍ الاتصال بالجلسة» بلا نهاية. المسار الفاشل يُحسب مرئيًّا بقيمته
+      الفارغة، فتُبثّ الحالة بما وصل بدل ألّا تُبثّ إطلاقًا.
+    */
     const unsubs = [
-      onValue(ref(db(), `${room(code)}/meta`), (s) => {
-        parts.meta = s.exists() ? (s.val() as RoomState['meta']) : null;
-        emit('meta');
-      }),
-      onValue(ref(db(), `${room(code)}/settings`), (s) => {
-        if (s.exists()) parts.settings = s.val() as RoomSettings;
-        emit('settings');
-      }),
-      onValue(ref(db(), `${room(code)}/players`), (s) => {
-        parts.players = s.exists() ? (s.val() as Record<string, PlayerPublic>) : {};
-        emit('players');
-      }),
-      onValue(ref(db(), `${room(code)}/round/progress`), (s) => {
-        parts.progress = s.exists() ? (s.val() as RoomState['progress']) : {};
-        emit('progress');
-      }),
-      onValue(ref(db(), `${room(code)}/round/results`), (s) => {
-        parts.results = s.exists() ? (s.val() as RoundResults) : null;
-        emit('results');
-      }),
+      onValue(
+        ref(db(), `${room(code)}/meta`),
+        (s) => {
+          parts.meta = s.exists() ? (s.val() as RoomState['meta']) : null;
+          emit('meta');
+        },
+        () => {
+          parts.meta = null;
+          emit('meta');
+        },
+      ),
+      onValue(
+        ref(db(), `${room(code)}/settings`),
+        (s) => {
+          if (s.exists()) parts.settings = s.val() as RoomSettings;
+          emit('settings');
+        },
+        () => emit('settings'),
+      ),
+      onValue(
+        ref(db(), `${room(code)}/players`),
+        (s) => {
+          parts.players = s.exists() ? (s.val() as Record<string, PlayerPublic>) : {};
+          emit('players');
+        },
+        () => emit('players'),
+      ),
+      onValue(
+        ref(db(), `${room(code)}/round/progress`),
+        (s) => {
+          parts.progress = s.exists() ? (s.val() as RoomState['progress']) : {};
+          emit('progress');
+        },
+        () => emit('progress'),
+      ),
+      onValue(
+        ref(db(), `${room(code)}/round/results`),
+        (s) => {
+          parts.results = s.exists() ? (s.val() as RoundResults) : null;
+          emit('results');
+        },
+        () => emit('results'),
+      ),
     ];
 
     return () => unsubs.forEach((un) => un());
