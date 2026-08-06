@@ -1,63 +1,51 @@
 /**
- * المتعاونون — كل ما يحدث في المرحلة السرية بعد نهاية الليل.
+ * المتعاونون — كل ما يحدث في آخر الليل حين يختار المُخفي من يساعده.
  * راجع GAME_RULES.md §8.
  */
 
 import { rulesFor } from './rules';
-import { witnessesOfHider } from './night';
+import type { Rng } from './rng';
+import { randomInt } from './rng';
 import type { SecretMap } from './deal';
 
 export interface AccomplicePlan {
-  mode: 'none' | 'witness' | 'chosen';
   hiderId: string | null;
   /** المرشحون الذين يستطيع المُخفي الاختيار منهم */
   candidates: string[];
-  /** كم يجب أن يختار المُخفي بنفسه (0 = لا شاشة اختيار) */
+  /** كم يجب أن يختار المُخفي */
   quota: number;
-  /** متعاونون يُعيَّنون تلقائيًا بلا اختيار (5 لاعبين، شاهد واحد) */
-  autoAssigned: string[];
 }
 
 export class AccompliceError extends Error {}
 
-/** يحسب ما الذي يجب أن يحدث في مرحلة المتعاونين لهذه الجولة. */
+/**
+ * يحسب ما الذي يجب أن يحدث في خطوة المتعاونين لهذه الجولة.
+ *
+ * المرشحون هم كل من على الطاولة عدا المُخفي. لا اشتراط أن يكونوا قد رأوه:
+ * التعيين بالمشاهدة كان يترك جولات بلا متعاون إطلاقًا حين لا يستيقظ أحد مع
+ * المُخفي، والقاعدة الآن أن لكل جولة متعاونًا واحدًا على الأقل.
+ */
 export function planAccomplices(secrets: SecretMap, playerCount: number): AccomplicePlan {
   const rules = rulesFor(playerCount);
   const hider = Object.values(secrets).find((secret) => secret.role === 'hider');
   const hiderId = hider?.playerId ?? null;
 
-  if (rules.accompliceMode === 'none' || !hiderId) {
-    return { mode: 'none', hiderId, candidates: [], quota: 0, autoAssigned: [] };
-  }
-
-  if (rules.accompliceMode === 'witness') {
-    const witnesses = witnessesOfHider(secrets);
-    if (witnesses.length === 0) {
-      // لا أحد شاهد المُخفي — جولة بلا متعاون، وهذا وضع صحيح.
-      return { mode: 'witness', hiderId, candidates: [], quota: 0, autoAssigned: [] };
-    }
-    if (witnesses.length === 1) {
-      return { mode: 'witness', hiderId, candidates: witnesses, quota: 0, autoAssigned: witnesses };
-    }
-    // أكثر من شاهد: المُخفي يختار واحدًا منهم فقط.
-    return { mode: 'witness', hiderId, candidates: witnesses, quota: 1, autoAssigned: [] };
-  }
+  if (!hiderId) return { hiderId: null, candidates: [], quota: 0 };
 
   const candidates = Object.keys(secrets)
     .filter((playerId) => playerId !== hiderId)
     .sort();
+
   return {
-    mode: 'chosen',
     hiderId,
     candidates,
     quota: Math.min(rules.accompliceCount, candidates.length),
-    autoAssigned: [],
   };
 }
 
 /**
- * يكتب في سر المُخفي ما يحتاجه لشاشة الاختيار، ويطبّق التعيين التلقائي إن وُجد.
- * يُستدعى مرة واحدة عند دخول مرحلة `secret-actions`.
+ * يكتب في سر المُخفي ما يحتاجه لشاشة الاختيار.
+ * يُستدعى مرة واحدة عند دخول مرحلة `night-accomplices`.
  */
 export function prepareAccompliceStage(secrets: SecretMap, playerCount: number): SecretMap {
   const plan = planAccomplices(secrets, playerCount);
@@ -66,7 +54,7 @@ export function prepareAccompliceStage(secrets: SecretMap, playerCount: number):
   const hider = secrets[plan.hiderId];
   if (!hider) return secrets;
 
-  let next: SecretMap = {
+  return {
     ...secrets,
     [plan.hiderId]: {
       ...hider,
@@ -74,11 +62,27 @@ export function prepareAccompliceStage(secrets: SecretMap, playerCount: number):
       accompliceCandidates: plan.candidates,
     },
   };
+}
 
-  if (plan.autoAssigned.length > 0) {
-    next = applyAccomplices(next, plan.autoAssigned, playerCount);
+/**
+ * اختيار احتياطي حين ينتهي وقت الخطوة ولم يصل اختيار المُخفي.
+ *
+ * جهاز قد ينقطع أو يدٌ قد تتردّد، والجولة لا تحتمل أن تُلعب بلا متعاون بعد أن
+ * وعد الراوي به. الاختيار عشوائي من المرشحين أنفسهم، وشكل الليل لا يتغيّر —
+ * فلا أحد على الطاولة يعرف أن المُخفي لم يختر بنفسه.
+ */
+export function autoPickAccomplices(
+  secrets: SecretMap,
+  playerCount: number,
+  rng: Rng,
+): string[] {
+  const plan = planAccomplices(secrets, playerCount);
+  const pool = [...plan.candidates];
+  const picked: string[] = [];
+  while (picked.length < plan.quota && pool.length > 0) {
+    picked.push(...pool.splice(randomInt(rng, 0, pool.length - 1), 1));
   }
-  return next;
+  return picked.sort();
 }
 
 /**
@@ -95,12 +99,6 @@ export function applyAccomplices(
   const hiderId = plan.hiderId;
 
   if (!hiderId) throw new AccompliceError('لا يوجد مُخفي ملف في هذه الجولة.');
-  if (rules.accompliceMode === 'none') {
-    if (chosenIds.length > 0) {
-      throw new AccompliceError('لا يوجد متعاونون في هذا العدد من اللاعبين.');
-    }
-    return secrets;
-  }
 
   const unique = [...new Set(chosenIds)];
   if (unique.length !== chosenIds.length) {
@@ -111,14 +109,13 @@ export function applyAccomplices(
   }
   for (const playerId of unique) {
     if (!secrets[playerId]) throw new AccompliceError(`لاعب غير موجود: ${playerId}`);
-    if (plan.candidates.length > 0 && !plan.candidates.includes(playerId)) {
+    if (!plan.candidates.includes(playerId)) {
       throw new AccompliceError(`اللاعب ${playerId} ليس من المرشحين المسموح اختيارهم.`);
     }
   }
 
-  const expected = plan.autoAssigned.length > 0 ? plan.autoAssigned.length : plan.quota;
-  if (unique.length !== expected) {
-    throw new AccompliceError(`مطلوب اختيار ${expected} متعاونًا، وصل ${unique.length}.`);
+  if (unique.length !== plan.quota) {
+    throw new AccompliceError(`مطلوب اختيار ${plan.quota} متعاونًا، وصل ${unique.length}.`);
   }
 
   const next: SecretMap = { ...secrets };

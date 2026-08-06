@@ -7,6 +7,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   allAcked,
   applyPendingAccompliceChoice,
+  closeAccompliceNight,
+  enterAccompliceNight,
   enterSecretActions,
   finalizeWakeSlots,
   nextPhase,
@@ -15,6 +17,7 @@ import {
   startRoleDistribution,
   PHASE_ORDER,
 } from '../director';
+import { accompliceIds } from '../accomplice';
 import { dealRound, emptySecret, type SecretMap } from '../deal';
 import { computeSoloSlots } from '../night';
 import { EMPTY_PROGRESS } from '../types';
@@ -63,7 +66,9 @@ const asTransport = (fake: FakeTransport) => fake as unknown as RoomTransport;
 describe('آلة الحالة', () => {
   it('تتقدم بالترتيب المعرّف وتتوقف عند النتائج', () => {
     expect(nextPhase('lobby')).toBe('role-distribution');
-    expect(nextPhase('night-phase-6')).toBe('secret-actions');
+    // آخر موعد لا يُنهي الليل: يبقى نداء المُخفي لاختيار متعاونيه
+    expect(nextPhase('night-phase-6')).toBe('night-accomplices');
+    expect(nextPhase('night-accomplices')).toBe('secret-actions');
     expect(nextPhase('voting')).toBe('reveal');
     expect(nextPhase('results')).toBeNull();
   });
@@ -138,7 +143,7 @@ describe('انتقال المضيف بين المراحل', () => {
   });
 });
 
-describe('المرحلة السرية عند المضيف', () => {
+describe('خطوة المتعاونين عند المضيف', () => {
   let fake: FakeTransport;
   beforeEach(() => {
     fake = new FakeTransport();
@@ -155,17 +160,53 @@ describe('المرحلة السرية عند المضيف', () => {
     );
   }
 
-  it('يعيّن الشاهد الوحيد متعاونًا تلقائيًا بلا شاشة اختيار', async () => {
+  it('يفتح خطوة الاختيار داخل الليل لا بعده', async () => {
     seed(5, 'p1', { p1: [3], p2: [3], p3: [1], p4: [4], p5: [5] });
-    await enterSecretActions(asTransport(fake), 'ABCD', 5);
-    expect(fake.phase).toBe('secret-actions');
-    expect(fake.secrets.p2!.role).toBe('accomplice');
+    await enterAccompliceNight(asTransport(fake), 'ABCD', 5);
+    expect(fake.phase).toBe('night-accomplices');
+    expect(fake.phase.startsWith('night-')).toBe(true);
+    expect(fake.secrets.p1!.accompliceQuota).toBe(1);
+    expect(accompliceIds(fake.secrets)).toEqual([]); // لا أحد يتحوّل قبل الاختيار
+  });
+
+  it('يختار نيابةً عن المُخفي إذا انتهت الخطوة بلا اختيار', async () => {
+    seed(6, 'p1', { p1: [1], p2: [2], p3: [3], p4: [4], p5: [5], p6: [6] });
+    await enterAccompliceNight(asTransport(fake), 'ABCD', 6);
+    await closeAccompliceNight(asTransport(fake), 'ABCD', 6);
+
+    const chosen = accompliceIds(fake.secrets);
+    expect(chosen).toHaveLength(1);
+    expect(chosen[0]).not.toBe('p1');
+    expect(fake.secrets.p1!.knownAllies).toEqual(chosen);
     expect(fake.secrets.p1!.accompliceQuota).toBe(0);
+  });
+
+  it('يحترم اختيار المُخفي ولا يستبدله عند الإغلاق', async () => {
+    seed(6, 'p1', { p1: [1], p2: [2], p3: [3], p4: [4], p5: [5], p6: [6] });
+    await enterAccompliceNight(asTransport(fake), 'ABCD', 6);
+    fake.secrets.p1!.accompliceChoice = ['p6'];
+    await closeAccompliceNight(asTransport(fake), 'ABCD', 6);
+    expect(accompliceIds(fake.secrets)).toEqual(['p6']);
+  });
+
+  it('لا يعيد الاختيار إذا أُغلقت الخطوة مرتين', async () => {
+    seed(6, 'p1', { p1: [1], p2: [2], p3: [3], p4: [4], p5: [5], p6: [6] });
+    await enterAccompliceNight(asTransport(fake), 'ABCD', 6);
+    await closeAccompliceNight(asTransport(fake), 'ABCD', 6);
+    const first = accompliceIds(fake.secrets);
+    await closeAccompliceNight(asTransport(fake), 'ABCD', 6);
+    expect(accompliceIds(fake.secrets)).toEqual(first);
+  });
+
+  it('ينتقل إلى المرحلة السرية بعد أن يُحسم الليل', async () => {
+    seed(6, 'p1', { p1: [1], p2: [2], p3: [3], p4: [4], p5: [5], p6: [6] });
+    await enterSecretActions(asTransport(fake), 'ABCD');
+    expect(fake.phase).toBe('secret-actions');
   });
 
   it('يطبّق اختيار المُخفي مرة واحدة فقط', async () => {
     seed(6, 'p1', { p1: [1], p2: [2], p3: [3], p4: [4], p5: [5], p6: [6] });
-    await enterSecretActions(asTransport(fake), 'ABCD', 6);
+    await enterAccompliceNight(asTransport(fake), 'ABCD', 6);
     expect(fake.secrets.p1!.accompliceQuota).toBe(1);
 
     // جهاز المُخفي يكتب اختياره
@@ -183,7 +224,7 @@ describe('المرحلة السرية عند المضيف', () => {
 
   it('لا يطبّق شيئًا قبل وصول الاختيار', async () => {
     seed(6, 'p1', { p1: [1], p2: [2], p3: [3], p4: [4], p5: [5], p6: [6] });
-    await enterSecretActions(asTransport(fake), 'ABCD', 6);
+    await enterAccompliceNight(asTransport(fake), 'ABCD', 6);
     const applied = await applyPendingAccompliceChoice(
       asTransport(fake),
       'ABCD',

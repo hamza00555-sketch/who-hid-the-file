@@ -18,6 +18,7 @@ function everyLine(): VoiceLine[] {
       }
       out.push(...s.slotClose(slot));
     }
+    for (const quota of [1, 2]) out.push(...s.accompliceCall(quota));
     for (const n of [3, 2, 1]) out.push(s.countdownTick(n));
   }
   return out;
@@ -84,6 +85,27 @@ describe('تعليمة الاستيقاظ تتبع طريقة اللعب', () =>
         expect(line.text, `«${line.text}» في ${line.id}`).not.toContain(word);
       }
     }
+  });
+
+  /*
+    ── الاستثناء الوحيد ──
+
+    نداء المتعاونين يسمّي دورًا ولا مفرّ: لا يمكن أن يُطلب من المُخفي أن يفتح
+    عينيه دون مناداته. وهو آمن لأن الأعين مغلقة ومن يسمع النداء غير من ينفّذه.
+    المحظور الحقيقي أن يُذكر **لاعب**: اسم أو رقم مقعد أو صفة تدلّ عليه.
+  */
+  it('نداء المتعاونين ينادي دورًا ولا يدلّ على لاعب', () => {
+    for (const quota of [1, 2]) {
+      const text = script.accompliceCall(quota).map((line) => line.text).join(' ');
+      expect(text).toContain('افتح عينيك');
+      for (const word of ['اسم', 'مقعد', 'رقم', 'يمين', 'يسار']) {
+        expect(text).not.toContain(word);
+      }
+    }
+    // الحصّتان نصّان مختلفان — وملفّان مختلفان
+    expect(script.accompliceCall(1).map((line) => line.id)).not.toEqual(
+      script.accompliceCall(2).map((line) => line.id),
+    );
   });
 });
 

@@ -5,8 +5,6 @@
  * راجع GAME_RULES.md §4 و §5.
  */
 
-export type AccompliceMode = 'none' | 'witness' | 'chosen';
-
 export interface CountRules {
   playerCount: number;
   /** كم نتيجة نرد يحصل عليها كل لاعب */
@@ -15,9 +13,8 @@ export interface CountRules {
   memberChoosesSlot: boolean;
   /** هل يستيقظ المُخفي عند كل نتائجه */
   hiderUsesAllDice: boolean;
-  /** كم متعاونًا في الجولة كحد أقصى */
-  accompliceCount: 0 | 1 | 2;
-  accompliceMode: AccompliceMode;
+  /** كم متعاونًا يختار المُخفي في آخر الليل — واحد على الأقل، اثنان على الأكثر */
+  accompliceCount: 1 | 2;
   /** هل يُسمح بفحص الجار للمنفردين */
   inspectionEnabled: boolean;
   /** هل يعرف المتعاون هوية المُخفي */
@@ -26,16 +23,25 @@ export interface CountRules {
   accomplicesKnowEachOther: boolean;
 }
 
+/*
+  ── عدد المتعاونين ──
+
+  القاعدة المطلوبة: لكل جولة متعاون واحد على الأقل واثنان على الأكثر، والعدد
+  يتبع عدد اللاعبين الكلي. فالمصفوفة كلها `chosen`: المُخفي هو من يختار، ولا
+  تعيين تلقائي بالمشاهدة.
+
+  4 لاعبين هو الطرف الحادّ: مُخفٍ ومتعاون في مواجهة عضوين. القاعدة صريحة
+  («أقل شيء متعاون واحد») فتُطبَّق كما هي، ويبقى التوازن رهن التجربة.
+*/
 const TABLE: Record<number, CountRules> = {
   4: {
     playerCount: 4,
     dicePerPlayer: 2,
     memberChoosesSlot: true,
     hiderUsesAllDice: false,
-    accompliceCount: 0,
-    accompliceMode: 'none',
-    inspectionEnabled: false,
-    accompliceKnowsHider: false,
+    accompliceCount: 1,
+    inspectionEnabled: true,
+    accompliceKnowsHider: true,
     accomplicesKnowEachOther: false,
   },
   5: {
@@ -44,7 +50,6 @@ const TABLE: Record<number, CountRules> = {
     memberChoosesSlot: false,
     hiderUsesAllDice: false,
     accompliceCount: 1,
-    accompliceMode: 'witness',
     inspectionEnabled: true,
     accompliceKnowsHider: true,
     accomplicesKnowEachOther: false,
@@ -55,7 +60,6 @@ const TABLE: Record<number, CountRules> = {
     memberChoosesSlot: false,
     hiderUsesAllDice: false,
     accompliceCount: 1,
-    accompliceMode: 'chosen',
     inspectionEnabled: true,
     accompliceKnowsHider: true,
     accomplicesKnowEachOther: false,
@@ -66,7 +70,6 @@ const TABLE: Record<number, CountRules> = {
     memberChoosesSlot: false,
     hiderUsesAllDice: false,
     accompliceCount: 2,
-    accompliceMode: 'chosen',
     inspectionEnabled: true,
     accompliceKnowsHider: false,
     accomplicesKnowEachOther: true,
@@ -77,7 +80,6 @@ const TABLE: Record<number, CountRules> = {
     memberChoosesSlot: false,
     hiderUsesAllDice: false,
     accompliceCount: 2,
-    accompliceMode: 'chosen',
     inspectionEnabled: true,
     accompliceKnowsHider: true,
     accomplicesKnowEachOther: true,

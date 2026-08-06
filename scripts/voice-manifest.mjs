@@ -63,6 +63,8 @@ export async function voiceLines() {
       }
       add(script.slotClose(slot));
     }
+    // نداء المتعاونين: نصّ لكل حصّة (متعاون واحد، متعاونان)
+    for (const quota of [1, 2]) add(script.accompliceCall(quota));
     for (const n of [3, 2, 1]) add([script.countdownTick(n)]);
   }
 

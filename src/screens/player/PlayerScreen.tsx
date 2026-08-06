@@ -186,6 +186,7 @@ export function PlayerScreen() {
             secret={secret}
             players={players}
             settings={state.settings}
+            phase={phase}
             slot={nightSlot}
             endsAt={state.meta.phaseEndsAt ?? null}
           />

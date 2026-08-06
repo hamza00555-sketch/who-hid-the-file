@@ -11,6 +11,7 @@ import { neighboursOf } from '../../game/seating';
 import { rulesFor } from '../../game/rules';
 import { validateVote, voteOptions } from '../../game/vote';
 import type {
+  Phase,
   PlayerPublic,
   PlayerSecret,
   RoomSettings,
@@ -392,6 +393,7 @@ export function PlayerNightStage({
   secret,
   players,
   settings,
+  phase,
   slot,
   endsAt,
 }: {
@@ -400,9 +402,36 @@ export function PlayerNightStage({
   secret: PlayerSecret | null;
   players: PlayerPublic[];
   settings: RoomSettings;
+  phase: Phase;
   slot: WakeSlot | null;
   endsAt: number | null;
 }) {
+  /*
+    ── آخر الليل ──
+
+    نداء واحد للمُخفي وحده. بقية الأجهزة تبقى على لوحة الليل نفسها بلا كلمة
+    إضافية: أي فرق في الشكل بين جهاز وآخر هنا يكشف من نُودي.
+  */
+  if (phase === 'night-accomplices') {
+    const isHider = secret?.role === 'hider';
+    return (
+      <NightHud
+        title="آخر الليل"
+        endsAt={endsAt}
+        settings={settings}
+        myTurn={isHider}
+        task="افتح عينيك واختر من يساعدك. اختيارك سري ولن يعرفه غيرك."
+      >
+        {isHider && secret && secret.accompliceQuota > 0 && (
+          <AccompliceChoice code={code} me={me} secret={secret} players={players} />
+        )}
+        {isHider && secret && secret.accompliceQuota === 0 && (
+          <p className="night-hud__note">اخترت. أغلق عينيك وانتظر الراوي.</p>
+        )}
+      </NightHud>
+    );
+  }
+
   const view = nightViewFor(secret, slot, players.length, settings.diceMode);
   const myTurn = slot != null && (secret?.effectiveSlots.includes(slot) ?? false);
 
@@ -436,7 +465,13 @@ export function PlayerNightStage({
   })();
 
   return (
-    <NightHud slot={slot} endsAt={endsAt} settings={settings} myTurn={myTurn} secret={secret}>
+    <NightHud
+      title={slot ? slotLabel(slot, settings.slotNaming) : 'الليل يبدأ'}
+      endsAt={endsAt}
+      settings={settings}
+      myTurn={myTurn}
+      task={nightTask(secret, settings)}
+    >
       {inner}
     </NightHud>
   );
@@ -454,18 +489,18 @@ export function PlayerNightStage({
  * مقصود ومطلوب — ومن يقرؤه هو وحده من فتح عينيه بأمر الراوي.
  */
 function NightHud({
-  slot,
+  title,
   endsAt,
   settings,
   myTurn,
-  secret,
+  task,
   children,
 }: {
-  slot: WakeSlot | null;
+  title: string;
   endsAt: number | null;
   settings: RoomSettings;
   myTurn: boolean;
-  secret: PlayerSecret | null;
+  task: string;
   children: ReactNode;
 }) {
   const remaining = useCountdown(endsAt);
@@ -474,11 +509,7 @@ function NightHud({
     <div className={`night-hud ${myTurn ? 'night-hud--mine' : ''}`}>
       <p className="night-hud__game">{settings.gameName}</p>
 
-      {slot ? (
-        <h2 className="night-hud__slot">{slotLabel(slot, settings.slotNaming)}</h2>
-      ) : (
-        <h2 className="night-hud__slot">الليل يبدأ</h2>
-      )}
+      <h2 className="night-hud__slot">{title}</h2>
 
       {remaining != null && (
         <p className="night-hud__timer" dir="ltr" aria-label={`بقي ${remaining} ثانية`}>
@@ -489,7 +520,7 @@ function NightHud({
       {myTurn ? (
         <div className="night-hud__turn">
           <p className="night-hud__badge">هذه ليلتك</p>
-          <p className="night-hud__task">{nightTask(secret, settings)}</p>
+          <p className="night-hud__task">{task}</p>
         </div>
       ) : (
         <p className="night-hud__idle">أغمض عينيك واستمع</p>
@@ -530,6 +561,90 @@ function useCountdown(endsAt: number | null): number | null {
 
   if (endsAt == null) return null;
   return Math.max(0, Math.ceil((endsAt - now) / 1000));
+}
+
+/**
+ * اختيار المتعاونين — يظهر على جهاز المُخفي وحده في آخر الليل.
+ *
+ * الجهاز يكتب الاختيار ولا يطبّقه: تحويل لاعب آخر إلى متعاون كتابةٌ في سرّه،
+ * وهي من حق المضيف وحده. راجع `applyPendingAccompliceChoice`.
+ */
+function AccompliceChoice({
+  code,
+  me,
+  secret,
+  players,
+}: {
+  code: string;
+  me: PlayerPublic;
+  secret: PlayerSecret;
+  players: PlayerPublic[];
+}) {
+  const { transport } = useSession();
+  const [picked, setPicked] = useState<string[]>([]);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const byId = useMemo(
+    () => Object.fromEntries(players.map((player) => [player.id, player])),
+    [players],
+  );
+  const candidates = secret.accompliceCandidates
+    .map((id) => byId[id])
+    .filter((player): player is PlayerPublic => Boolean(player));
+
+  if (sent) {
+    return <p className="night-hud__note">وصل اختيارك. أغلق عينيك.</p>;
+  }
+
+  return (
+    <div className="night-awake">
+      <h2>{secret.accompliceQuota === 1 ? 'اختر متعاونًا واحدًا' : 'اختر متعاونَين'}</h2>
+      <p className="lede">
+        {secret.accompliceQuota === 1 ? 'سيصله' : 'سيصلهما'} إشعار سري بعد انتهاء الليل، ولن
+        يعرف بقية اللاعبين شيئًا.
+      </p>
+      <div className="stack">
+        {candidates.map((player) => (
+          <PlayerCard
+            key={player.id}
+            player={player}
+            selected={picked.includes(player.id)}
+            onSelect={() =>
+              setPicked((current) =>
+                current.includes(player.id)
+                  ? current.filter((id) => id !== player.id)
+                  : current.length < secret.accompliceQuota
+                    ? [...current, player.id]
+                    : current,
+              )
+            }
+          />
+        ))}
+      </div>
+      {error && (
+        <p role="alert" className="join__error">
+          {error}
+        </p>
+      )}
+      <Button
+        size="xl"
+        full
+        disabled={picked.length !== secret.accompliceQuota}
+        onClick={async () => {
+          try {
+            await transport.writeSecret(code, me.id, { ...secret, accompliceChoice: picked });
+            setSent(true);
+            setError(null);
+          } catch {
+            setError('تعذّر إرسال الاختيار. حاول مرة أخرى.');
+          }
+        }}
+      >
+        أكّد الاختيار
+      </Button>
+    </div>
+  );
 }
 
 /** اختيار الجار أثناء الليل — خياران لا ثالث لهما. */
@@ -641,8 +756,6 @@ export function PlayerSecretStage({
 }) {
   const { transport } = useSession();
   const gate = useRevealGate();
-  const [picked, setPicked] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
 
   const byId = useMemo(
     () => Object.fromEntries(players.map((player) => [player.id, player])),
@@ -662,67 +775,11 @@ export function PlayerSecretStage({
     );
   }
 
-  const mustChoose = secret.accompliceQuota > 0;
-
-  /* ── المُخفي يختار متعاونيه ── */
-  if (mustChoose) {
-    const candidates = secret.accompliceCandidates
-      .map((id) => byId[id])
-      .filter((player): player is PlayerPublic => Boolean(player));
-
-    return (
-      <>
-        <h2>اختر {secret.accompliceQuota === 1 ? 'متعاونًا واحدًا' : 'متعاونين اثنين'}</h2>
-        <p className="lede">
-          {secret.accompliceCandidates.length < players.length - 1
-            ? 'هؤلاء من استيقظوا معك ورأوك.'
-            : 'سيصلهم إشعار سري، ولن يعرف بقية اللاعبين شيئًا.'}
-        </p>
-        <div className="stack">
-          {candidates.map((player) => (
-            <PlayerCard
-              key={player.id}
-              player={player}
-              selected={picked.includes(player.id)}
-              onSelect={() =>
-                setPicked((current) =>
-                  current.includes(player.id)
-                    ? current.filter((id) => id !== player.id)
-                    : current.length < secret.accompliceQuota
-                      ? [...current, player.id]
-                      : current,
-                )
-              }
-            />
-          ))}
-        </div>
-        {error && (
-          <p role="alert" className="join__error">
-            {error}
-          </p>
-        )}
-        <Button
-          size="xl"
-          full
-          disabled={picked.length !== secret.accompliceQuota}
-          onClick={async () => {
-            try {
-              await transport.writeSecret(code, me.id, {
-                ...secret,
-                accompliceChoice: picked,
-              });
-              setError(null);
-            } catch {
-              setError('تعذّر إرسال الاختيار. حاول مرة أخرى.');
-            }
-          }}
-        >
-          أكّد الاختيار
-        </Button>
-      </>
-    );
-  }
-
+  /*
+    لا شاشة اختيار متعاونين هنا: الاختيار يقع في آخر الليل والأعين مغلقة
+    (`night-accomplices`). ما يبقى للمرحلة السرية هو **إيصال** المعلومة —
+    من صار متعاونًا، ومن يعرف من — بعد أن تُفتح الأعين.
+  */
   if (!resolved) {
     return <WaitingNote>لحظة واحدة</WaitingNote>;
   }

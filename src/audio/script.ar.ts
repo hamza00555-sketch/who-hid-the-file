@@ -104,6 +104,38 @@ export function buildScript(naming: SlotNaming = GAME_CONFIG.slotNaming) {
     countdownTick: (seconds: number): VoiceLine =>
       line(`count.${seconds}`, String(seconds), 0),
 
+    /*
+      ── آخر الليل: المتعاونون ──
+
+      الأعين ما زالت مغلقة، والراوي ينادي دورًا لا اسمًا — وهذا آمن: من يسمع
+      النداء غير من ينفّذه، ولا شيء في الجملة يدلّ على من هو.
+
+      الحصّة داخل المعرّف لا في النصّ وحده: «متعاونًا واحدًا» و«متعاونين اثنين»
+      نصّان مختلفان، ومعرّف واحد لهما يعني ملفًّا مسجّلًا واحدًا لنطقين.
+    */
+    accompliceCall: (quota: number): VoiceLine[] => [
+      line(
+        'accomplice.call.1',
+        `${GAME_CONFIG.roles.hider.label}، افتح عينيك وحدك.`,
+        1600,
+      ),
+      quota === 1
+        ? line(
+            'accomplice.call.pick.1',
+            'انظر إلى جهازك واختر متعاونًا واحدًا يقف معك.',
+            1400,
+          )
+        : line(
+            'accomplice.call.pick.2',
+            'انظر إلى جهازك واختر متعاونَين يقفان معك.',
+            1400,
+          ),
+    ],
+
+    accompliceClose: [
+      line('accomplice.close.1', 'أغلق عينيك الآن.', 1800),
+    ],
+
     /* ── نهاية الليل ── */
     nightEnd: [
       line('night.end.1', 'انتهى الليل… افتحوا أعينكم.', 2000),

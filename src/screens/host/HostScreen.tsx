@@ -12,6 +12,8 @@ import { GAME_CONFIG } from '../../config/game.config';
 import {
   allAcked,
   applyPendingAccompliceChoice,
+  closeAccompliceNight,
+  enterAccompliceNight,
   enterSecretActions,
   finalizeWakeSlots,
   resolvePendingInspections,
@@ -52,6 +54,7 @@ const SCENE_TONE: Partial<Record<Phase, SceneTone>> = {
   'night-phase-4': 'deep-night',
   'night-phase-5': 'deep-night',
   'night-phase-6': 'deep-night',
+  'night-accomplices': 'deep-night',
   'secret-actions': 'night',
   discussion: 'dawn',
   voting: 'dawn',
@@ -86,6 +89,8 @@ export function HostScreen() {
   const phaseRef = useRef<Phase>(phase);
   phaseRef.current = phase;
   const startedRef = useRef<string>('');
+  /** وصل اختيار المُخفي لمتعاونيه — يُنهي عدّ الخطوة قبل وقته */
+  const accompliceReadyRef = useRef(false);
 
   const disconnected = players.filter((player) => !player.connected);
   const isNight = phase.startsWith('night-');
@@ -104,10 +109,12 @@ export function HostScreen() {
     يحتاج أن يرى كم بقي له قبل «أغلقوا أعينكم».
   */
   const runCountdown = useCallback(
-    async (seconds: number, guard: Phase) => {
+    async (seconds: number, guard: Phase, done?: () => boolean) => {
       void transport.setPhaseDeadline(code, Date.now() + seconds * 1000);
       for (let value = seconds; value > 0; value--) {
         if (phaseRef.current !== guard) return false;
+        // خطوة انتهت قبل وقتها (وصل اختيار المُخفي مثلًا) لا تُبقي الطاولة تنتظر
+        if (done?.()) break;
         setCountdown({ value, total: seconds });
         await wait(1000);
       }
@@ -166,12 +173,41 @@ export function HostScreen() {
         if (slot < 6) {
           await transport.setPhase(code, `night-phase-${slot + 1}` as Phase);
         } else {
-          await narrator.say(narrator.script.nightEnd);
-          if (!still()) return;
-          await enterSecretActions(transport, code, playerCount);
-          await transport.setSecretStage(code, 'choosing');
-          void narrator.say(narrator.script.secretActions);
+          // آخر موعد انتهى، ويبقى من الليل نداء واحد: المُخفي ومتعاونوه.
+          await enterAccompliceNight(transport, code, playerCount);
         }
+        return;
+      }
+
+      /*
+        ── آخر الليل: المُخفي يختار متعاونيه ──
+
+        قبل نهاية الليل لا بعدها: المتعاون يقف مع المُخفي في نفس الظلام، وسؤاله
+        بعد أن تُفتح الأعين كان يجعل نصف اللعبة يحدث والطاولة تنظر إلى بعضها.
+
+        العدّ ينتهي مبكرًا إن وصل الاختيار، وإن لم يصل يختار المخرج نيابةً —
+        فلا جولة بلا متعاون بعد أن وعد الراوي به.
+      */
+      if (guard === 'night-accomplices') {
+        accompliceReadyRef.current = false;
+        await narrator.say(
+          narrator.script.accompliceCall(rulesFor(playerCount).accompliceCount),
+        );
+        if (!still()) return;
+        const finished = await runCountdown(
+          settings?.nightCountdownSeconds ?? GAME_CONFIG.defaults.nightCountdownSeconds,
+          guard,
+          () => accompliceReadyRef.current,
+        );
+        if (!finished) return;
+        await closeAccompliceNight(transport, code, playerCount);
+        await narrator.say(narrator.script.accompliceClose);
+        if (!still()) return;
+        await narrator.say(narrator.script.nightEnd);
+        if (!still()) return;
+        await enterSecretActions(transport, code);
+        await transport.setSecretStage(code, 'choosing');
+        void narrator.say(narrator.script.secretActions);
         return;
       }
 
@@ -274,6 +310,25 @@ export function HostScreen() {
       void resolvePendingInspections(transport, code, playersRef.current, secrets);
     });
   }, [isHost, phase, roundId, code, transport]);
+
+  /*
+    ── خطوة المتعاونين ──
+
+    جهاز المُخفي يكتب اختياره ولا يستطيع تطبيقه: التطبيق يعدّل أسرار لاعبين
+    آخرين. فيلتقطه المضيف هنا ويطبّقه فورًا، ويرفع العلم الذي يُنهي عدّ الخطوة
+    مبكرًا بدل أن تنتظر الطاولة في الظلام بلا سبب.
+  */
+  useEffect(() => {
+    if (!isHost || phase !== 'night-accomplices' || !roundId) return;
+    return transport.watchAllSecrets(code, (secrets) => {
+      if (Object.keys(secrets).length === 0) return;
+      const hider = Object.values(secrets).find((secret) => secret.role === 'hider');
+      if (!hider) return;
+      if ((hider.accompliceChoice?.length ?? 0) === 0 && hider.accompliceQuota > 0) return;
+      accompliceReadyRef.current = true;
+      void applyPendingAccompliceChoice(transport, code, playerCount, secrets);
+    });
+  }, [isHost, phase, roundId, code, transport, playerCount]);
 
   useEffect(() => {
     if (!isHost || phase !== 'secret-actions' || !roundId) return;

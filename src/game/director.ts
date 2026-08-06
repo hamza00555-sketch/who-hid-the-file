@@ -6,7 +6,12 @@
  */
 
 import type { RoomTransport } from '../net/transport';
-import { applyAccomplices, prepareAccompliceStage } from './accomplice';
+import {
+  applyAccomplices,
+  autoPickAccomplices,
+  planAccomplices,
+  prepareAccompliceStage,
+} from './accomplice';
 import { dealRound, type SecretMap } from './deal';
 import { canInspect, computeSoloSlots, inspectTargets, performInspection } from './night';
 import { cryptoRng } from './rng';
@@ -26,6 +31,7 @@ export const PHASE_ORDER: readonly Phase[] = [
   'night-phase-4',
   'night-phase-5',
   'night-phase-6',
+  'night-accomplices',
   'secret-actions',
   'discussion',
   'voting',
@@ -64,15 +70,49 @@ export async function finalizeWakeSlots(
   return withSolo;
 }
 
-/** يدخل المرحلة السرية: يجهّز شاشة المتعاونين ويطبّق التعيين التلقائي. */
-export async function enterSecretActions(
+/**
+ * يفتح خطوة المتعاونين الليلية: يكتب الحصّة والمرشحين في سر المُخفي ثم يدخل
+ * المرحلة. الكتابة **قبل** تغيير المرحلة حتى لا تصل شاشة الاختيار إلى جهاز
+ * المُخفي قبل ما تعرضه.
+ */
+export async function enterAccompliceNight(
   transport: RoomTransport,
   code: string,
   playerCount: number,
 ): Promise<void> {
   const secrets = await transport.readSecrets(code);
   await transport.writeSecrets(code, prepareAccompliceStage(secrets, playerCount));
+  await transport.setPhase(code, 'night-accomplices');
+}
+
+/** يدخل المرحلة السرية بعد أن انتهى الليل بكل خطواته. */
+export async function enterSecretActions(
+  transport: RoomTransport,
+  code: string,
+): Promise<void> {
   await transport.setPhase(code, 'secret-actions');
+}
+
+/**
+ * يُغلق خطوة المتعاونين: يطبّق ما اختاره المُخفي، وإن لم يصل اختيار يختار
+ * المخرج نيابةً عنه. راجع `autoPickAccomplices` — الجولة لا تُلعب بلا متعاون
+ * بعد أن وعد الراوي به.
+ */
+export async function closeAccompliceNight(
+  transport: RoomTransport,
+  code: string,
+  playerCount: number,
+): Promise<void> {
+  const secrets = await transport.readSecrets(code);
+  if (await applyPendingAccompliceChoice(transport, code, playerCount, secrets)) return;
+
+  const plan = planAccomplices(secrets, playerCount);
+  const hider = plan.hiderId ? secrets[plan.hiderId] : null;
+  if (!hider || hider.accompliceQuota === 0) return; // طُبِّق من قبل
+
+  const picked = autoPickAccomplices(secrets, playerCount, cryptoRng);
+  if (picked.length === 0) return;
+  await transport.writeSecrets(code, applyAccomplices(secrets, picked, playerCount));
 }
 
 /**

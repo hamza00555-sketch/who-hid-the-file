@@ -93,7 +93,9 @@ export function HostPlayerPanel({
       */
       const myTurn = nightSlot != null && (secret?.effectiveSlots.includes(nightSlot) ?? false);
       const view = nightViewFor(secret, nightSlot, players.length, settings.diceMode);
-      if (!myTurn && view === 'blackout') return null;
+      // آخر الليل: للمُخفي شاشة اختيار، ولغيره لا شيء يُرسم فوق مشهد الراوي
+      const myCall = phase === 'night-accomplices' && secret?.role === 'hider';
+      if (!myTurn && !myCall && view === 'blackout') return null;
       return (
         <PlayerNightStage
           code={code}
@@ -101,6 +103,7 @@ export function HostPlayerPanel({
           secret={secret}
           players={players}
           settings={settings}
+          phase={phase}
           slot={nightSlot}
           endsAt={endsAt}
         />

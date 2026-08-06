@@ -664,13 +664,19 @@ export function HostNightStage({
   onPause: () => void;
 }) {
   const slot = slotOfNightPhase(phase);
+  const closing = phase === 'night-accomplices';
   const sleepers = useMemo(() => ROSTER.slice(0, 5), []);
 
+  /*
+    عنوان محايد في خطوة المتعاونين: الطاولة كلها تقرأ هذه الشاشة، وكتابة
+    «يختار متعاونيه» فوقها تخبر الجميع بما يجري الآن — والراوي نطقه أصلًا.
+    ما يبقى مخفيًا هو **من** يفعله، وهذا لا يظهر هنا ولا هناك.
+  */
   return (
     <div className="night-stage">
       <p className="night-stage__label">{slot ? 'مرحلة' : ''}</p>
       <h1 className="night-stage__title">
-        {slot ? slotLabel(slot, naming) : 'بدأ الليل'}
+        {slot ? slotLabel(slot, naming) : closing ? 'آخر الليل' : 'بدأ الليل'}
       </h1>
 
       <div className="night-stage__sleepers" aria-hidden="true">
@@ -695,7 +701,12 @@ export function HostNightStage({
 
       <div className="night-stage__meter" aria-label="تقدّم الليل">
         {[1, 2, 3, 4, 5, 6].map((value) => (
-          <span key={value} data-state={slot && value < slot ? 'past' : value === slot ? 'now' : 'next'} />
+          <span
+            key={value}
+            data-state={
+              closing || (slot && value < slot) ? 'past' : value === slot ? 'now' : 'next'
+            }
+          />
         ))}
       </div>
 

@@ -163,19 +163,27 @@ describe('فحص الجار', () => {
     expect(canInspect(secrets.p1!, 6)).toBe(false);
   });
 
-  it('يمنع الفحص تمامًا في وضع الأربعة لاعبين', () => {
+  /*
+    كان الفحص مغلقًا في وضع الأربعة. والقاعدة الآن واحدة لكل الأعداد: من
+    استيقظ وحده يختار أحد جاريه — عددٌ أقلّ لا يعني معلومة أقلّ.
+  */
+  it('يسمح بالفحص في وضع الأربعة أيضًا', () => {
     let secrets = build(4, 'p1', { p1: [1, 2], p2: [3, 4], p3: [5, 6], p4: [1, 5] });
     secrets = computeSoloSlots({
       ...secrets,
+      p1: chooseSlot(secrets.p1!, 1),
       p2: chooseSlot(secrets.p2!, 3),
       p3: chooseSlot(secrets.p3!, 6),
       p4: chooseSlot(secrets.p4!, 5),
     });
     expect(secrets.p2!.soloSlots).toEqual([3]);
-    expect(canInspect(secrets.p2!, 4)).toBe(false);
-    expect(() =>
-      performInspection(secrets.p2!, 'right', makePlayers(4), secrets),
-    ).toThrow();
+    expect(canInspect(secrets.p2!, 4)).toBe(true);
+    expect(
+      performInspection(secrets.p2!, 'right', makePlayers(4), secrets).inspection,
+    ).not.toBeNull();
+
+    // والمُخفي وحده ممنوع، مهما انفرد
+    expect(canInspect(secrets.p1!, 4)).toBe(false);
   });
 
   it('يكشف موعد الجار المختار فقط ولا شيء غيره', () => {
@@ -275,11 +283,23 @@ describe('ماذا تعرض شاشة اللاعب في مرحلة ليلية', (
     expect(nightViewFor(null, 2, 6, 'digital')).toBe('blackout');
   });
 
-  it('عند 4 لاعبين لا فحص إطلاقًا — القاعدة تُغلقه', () => {
+  it('عند 4 لاعبين يظهر المُنتقي للمنفرد مثل بقية الأعداد', () => {
     const four = build(4, 'p1', { p1: [1, 2], p2: [2, 3], p3: [4, 5], p4: [6, 1] });
     const p3 = chooseSlot(four.p3!, 4);
     const solo = computeSoloSlots({ ...four, p3 });
-    expect(nightViewFor(solo.p3!, 4, 4, 'digital')).toBe('blackout');
+    expect(nightViewFor(solo.p3!, 4, 4, 'digital')).toBe('pick');
+  });
+
+  /* من استيقظ ومعه غيره لا يرى شيئًا — «ماحد يشوف ليلة أحد ثاني» */
+  it('لا فحص لمن استيقظ ومعه أحد', () => {
+    const four = build(4, 'p1', { p1: [1, 2], p2: [2, 3], p3: [4, 5], p4: [6, 1] });
+    const shared = computeSoloSlots({
+      ...four,
+      p1: chooseSlot(four.p1!, 2),
+      p2: chooseSlot(four.p2!, 2),
+    });
+    expect(shared.p2!.soloSlots).toEqual([]);
+    expect(nightViewFor(shared.p2!, 2, 4, 'digital')).toBe('blackout');
   });
 });
 
