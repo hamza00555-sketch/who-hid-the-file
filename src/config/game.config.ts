@@ -50,7 +50,7 @@ export const GAME_CONFIG = {
 
   defaults: {
     diceMode: 'digital' as 'digital' | 'physical',
-    nightCountdownSeconds: 10,
+    nightCountdownSeconds: 14,
     nightStageLeadInSeconds: 4,
     discussionSeconds: 180,
     voiceEnabled: true,
@@ -59,6 +59,15 @@ export const GAME_CONFIG = {
     narratorSource: 'recorded' as 'recorded' | 'tts',
     ttsRate: 0.82,
   },
+
+  /**
+   * نافذة القراءة بعد كشف موعد الجار.
+   *
+   * تبدأ من لحظة وصول المعلومة لا من فتح الموعد: ثوانيه صُرفت في الانتباه
+   * والقراءة والضغط ورحلة اللمسة. من دون هذه النافذة يظهر الموعد والعدّ في
+   * آخره، فيُغلق الليل قبل أن يُقرأ.
+   */
+  nightReadSeconds: 9,
 
   /** رمز الجلسة: حروف واضحة بلا التباس بصري */
   roomCode: {

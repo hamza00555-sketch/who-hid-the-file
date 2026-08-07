@@ -588,8 +588,8 @@ function SettingsPanel({
         <span>مدة العد التنازلي في كل مرحلة</span>
         <input
           type="range"
-          min={6}
-          max={20}
+          min={8}
+          max={30}
           value={settings.nightCountdownSeconds}
           onChange={(event) =>
             onChange({ nightCountdownSeconds: Number(event.target.value) })

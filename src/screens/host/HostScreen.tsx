@@ -107,6 +107,8 @@ export function HostScreen() {
   const accompliceReadyRef = useRef(false);
   /** جولة أُطلق كشفها — يمنع حساب النتيجة مرّتين */
   const revealedRoundRef = useRef<string>('');
+  /** لحظةٌ لا يُغلق الموعد قبلها: نافذة قراءة من كشف فحصٍ للتوّ */
+  const readUntilRef = useRef(0);
 
   const disconnected = players.filter((player) => !player.connected);
   const isNight = phase.startsWith('night-');
@@ -125,17 +127,42 @@ export function HostScreen() {
     العدّ يُنشر لحظةَ انتهائه لا ثوانيه المتبقية: كل جهاز يحسب بساعته، فلا
     رسالة كل ثانية ولا انحراف يتراكم مع تأخّر الشبكة. من يستيقظ في موعده
     يحتاج أن يرى كم بقي له قبل «أغلقوا أعينكم».
+
+    وينتهي عند **لحظة**، لا بعد عددٍ ثابت من الدورات — لأن اللحظة قابلة
+    للتأجيل. ومن يفحص جاره يحتاج ذلك: العدّ يبدأ مع فتح الموعد، فتُصرَف ثوانيه
+    في أن ينتبه اللاعب ويقرأ البطاقتين ويضغط وتذهب اللمسة إلى المضيف وتعود.
+    فيصل الموعد المكشوف والعدّ في آخره، ويُغلق قبل أن يُقرأ.
+
+    فحين يُكشف فحص تُدفع النهاية إلى الأمام بمقدار نافذة قراءة تبدأ **من لحظة
+    الكشف**. والتمديد لا يقع إلا في الليلة التي فُحص فيها فعلًا، ولا يتجاوز
+    نافذة واحدة مهما تعدّد الفاحصون — فالليل يبقى مضبوطًا.
   */
   const runCountdown = useCallback(
     async (seconds: number, guard: Phase, done?: () => boolean) => {
-      void transport.setPhaseDeadline(code, Date.now() + seconds * 1000);
-      for (let value = seconds; value > 0; value--) {
+      const start = Date.now();
+      let endsAt = start + seconds * 1000;
+      let published = 0;
+      let total = seconds;
+
+      for (;;) {
         if (phaseRef.current !== guard) return false;
         // خطوة انتهت قبل وقتها (وصل اختيار المُخفي مثلًا) لا تُبقي الطاولة تنتظر
         if (done?.()) break;
-        setCountdown({ value, total: seconds });
-        await wait(1000);
+
+        endsAt = Math.max(endsAt, readUntilRef.current);
+        if (endsAt !== published) {
+          published = endsAt;
+          total = Math.max(total, Math.ceil((endsAt - start) / 1000));
+          // الأجهزة تحسب من اللحظة، فيرى الفاحص عدّاده يمتدّ لا يقفز
+          void transport.setPhaseDeadline(code, endsAt);
+        }
+
+        const remaining = endsAt - Date.now();
+        if (remaining <= 0) break;
+        setCountdown({ value: Math.ceil(remaining / 1000), total });
+        await wait(Math.min(250, remaining));
       }
+
       setCountdown(null);
       void transport.setPhaseDeadline(code, null);
       return phaseRef.current === guard;
@@ -153,6 +180,7 @@ export function HostScreen() {
     const guard = phase;
     const still = () => phaseRef.current === guard;
     setPendingStep(null);
+    readUntilRef.current = 0;
 
     /*
       كل انتقالات المراحل تجري داخل هذه الدالة. أي رفض داخلها — كتابة تفشل،
@@ -374,7 +402,14 @@ export function HostScreen() {
     if (!isHost || !roundId || !phase.startsWith('night-phase-')) return;
     return transport.watchAllSecrets(code, (secrets) => {
       if (Object.keys(secrets).length === 0) return;
-      void resolvePendingInspections(transport, code, playersRef.current, secrets);
+      void resolvePendingInspections(transport, code, playersRef.current, secrets).then(
+        (revealed) => {
+          // الموعد المكشوف وصل الآن — تبدأ نافذة القراءة من هذه اللحظة
+          if (revealed) {
+            readUntilRef.current = Date.now() + GAME_CONFIG.nightReadSeconds * 1000;
+          }
+        },
+      );
     });
   }, [isHost, phase, roundId, code, transport]);
 
