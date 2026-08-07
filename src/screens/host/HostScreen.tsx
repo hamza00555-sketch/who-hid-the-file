@@ -37,6 +37,7 @@ import {
   HostResultsStage,
   HostRevealStage,
   HostRolesStage,
+  HostRoundMenu,
   HostSecretStage,
   HostVotingStage,
 } from './hostStages';
@@ -84,6 +85,17 @@ export function HostScreen() {
     source: settings?.narratorSource ?? GAME_CONFIG.defaults.narratorSource,
   });
 
+  /*
+    ── الليل بلا تعليق صوتي ──
+
+    حين يُطفأ الراوي لا شيء يقود المراحل: لا جملة تُقال ولا عدّ يمشي. فيقودها
+    صاحب الجهاز بلمسة — والشاشة كلّها هي الزر، لأن عينيه مغمضتان وهو يلعب مع
+    الطاولة فلا يبحث عن زرّ صغير.
+  */
+  const [pendingStep, setPendingStep] = useState<{ label: string; run: () => Promise<void> } | null>(
+    null,
+  );
+  const [menuOpen, setMenuOpen] = useState(false);
   const [countdown, setCountdown] = useState<{ value: number; total: number } | null>(null);
   const [stageError, setStageError] = useState<string | null>(null);
   const [revealStep, setRevealStep] = useState<number | null>(null);
@@ -98,6 +110,8 @@ export function HostScreen() {
 
   const disconnected = players.filter((player) => !player.connected);
   const isNight = phase.startsWith('night-');
+  /** بلا راوٍ لا شيء يقود المراحل — فيقودها صاحب الجهاز بلمسة */
+  const silent = !(settings?.voiceEnabled ?? true);
 
   useEffect(() => {
     // الجهاز الرئيسي لا يخفت أبدًا: يجب أن يُقرأ من الطرف الآخر للطاولة.
@@ -138,6 +152,7 @@ export function HostScreen() {
 
     const guard = phase;
     const still = () => phaseRef.current === guard;
+    setPendingStep(null);
 
     /*
       كل انتقالات المراحل تجري داخل هذه الدالة. أي رفض داخلها — كتابة تفشل،
@@ -151,6 +166,15 @@ export function HostScreen() {
     void (async () => {
       try {
       if (guard === 'night-intro') {
+        if (silent) {
+          // جملة الراوي الأخيرة تبقى معلّقة وقد سكت — تُمحى قبل فتح خطوة يدوية
+          narrator.stop();
+          setPendingStep({
+            label: 'ابدأ الموعد الأول',
+            run: async () => transport.setPhase(code, 'night-phase-1'),
+          });
+          return;
+        }
         await narrator.say(narrator.script.nightStart);
         if (still()) await transport.setPhase(code, 'night-phase-1');
         return;
@@ -158,6 +182,24 @@ export function HostScreen() {
 
       const slot = slotOfNightPhase(guard);
       if (slot) {
+        const closeSlot = async () => {
+          if (slot < 6) {
+            await transport.setPhase(code, `night-phase-${slot + 1}` as Phase);
+          } else {
+            // آخر موعد انتهى، ويبقى من الليل نداء واحد: المُخفي ومتعاونوه.
+            await enterAccompliceNight(transport, code, playerCount);
+          }
+        };
+
+        if (silent) {
+          narrator.stop();
+          setPendingStep({
+            label: slot < 6 ? 'الموعد التالي' : 'أنهِ المواعيد',
+            run: closeSlot,
+          });
+          return;
+        }
+
         await narrator.say(
           narrator.script.slotOpen(
             slot,
@@ -173,13 +215,7 @@ export function HostScreen() {
         if (!finished) return;
         await narrator.say(narrator.script.slotClose(slot));
         if (!still()) return;
-
-        if (slot < 6) {
-          await transport.setPhase(code, `night-phase-${slot + 1}` as Phase);
-        } else {
-          // آخر موعد انتهى، ويبقى من الليل نداء واحد: المُخفي ومتعاونوه.
-          await enterAccompliceNight(transport, code, playerCount);
-        }
+        await closeSlot();
         return;
       }
 
@@ -194,6 +230,19 @@ export function HostScreen() {
       */
       if (guard === 'night-accomplices') {
         accompliceReadyRef.current = false;
+
+        const closeNight = async () => {
+          await closeAccompliceNight(transport, code, playerCount);
+          await enterSecretActions(transport, code);
+          await transport.setSecretStage(code, 'choosing');
+        };
+
+        if (silent) {
+          narrator.stop();
+          setPendingStep({ label: 'أنهِ الليل', run: closeNight });
+          return;
+        }
+
         await narrator.say(
           narrator.script.accompliceCall(rulesFor(playerCount).accompliceCount),
         );
@@ -258,6 +307,7 @@ export function HostScreen() {
     runCountdown,
     settings?.nightCountdownSeconds,
     settings?.diceMode,
+    silent,
   ]);
 
   /* ── انتقالات مشروطة بجاهزية اللاعبين ── */
@@ -503,12 +553,71 @@ export function HostScreen() {
             <Badge tone="warn">{disconnected.length} جهاز منقطع</Badge>
           )}
         </div>
-        {!narrator.ttsAvailable && (
-          <div className="host-bar__group">
-            <Badge tone="warn">لا يوجد محرك نطق</Badge>
-          </div>
-        )}
+        <div className="host-bar__group">
+          {!narrator.ttsAvailable && <Badge tone="warn">لا يوجد محرك نطق</Badge>}
+          {/*
+            بعد بدء الجولة لم يكن للمضيف أي مخرج: لا ضبط إعداد، ولا إنهاء، ولا
+            خروج — إلا بإغلاق المتصفّح. هذا الزر هو الباب.
+          */}
+          {phase !== 'lobby' && (
+            <button
+              type="button"
+              className="host-bar__menu"
+              onClick={() => setMenuOpen(true)}
+              aria-label="إعدادات الجولة"
+            >
+              ⚙
+            </button>
+          )}
+        </div>
       </header>
+
+      {menuOpen && (
+        <HostRoundMenu
+          settings={state.settings}
+          onSettings={(patch) => void transport.updateSettings(code, patch)}
+          onDismiss={() => setMenuOpen(false)}
+          onNewRound={() => {
+            setMenuOpen(false);
+            setStageError(null);
+            startedRef.current = '';
+            revealedRoundRef.current = '';
+            void transport.resetRound(code);
+          }}
+          onClose={() => {
+            setMenuOpen(false);
+            void transport.closeRoom(code).finally(() => {
+              forgetSession();
+              navigate('/');
+            });
+          }}
+        />
+      )}
+
+      {/*
+        ── الشاشة كلّها زر ──
+
+        في وضع بلا تعليق صوتي يقود المضيف الليل بلمسة، وعيناه مغمضتان مع
+        الطاولة. فالطبقة تملأ الشاشة وتقع **تحت** كل ما هو تفاعليّ: لمسة على
+        فراغ تنقل الليلة، ولمسة على بطاقة جار تفعل ما كانت تفعله.
+      */}
+      {pendingStep && (
+        <button
+          type="button"
+          className="night-tap"
+          onClick={() => {
+            const step = pendingStep;
+            setPendingStep(null);
+            void step.run().catch((cause) => {
+              setPendingStep(step);
+              setStageError(cause instanceof Error ? cause.message : String(cause));
+            });
+          }}
+        >
+          <span className="night-tap__hint">{pendingStep.label}</span>
+          <span className="night-tap__note">المس أي مكان</span>
+        </button>
+      )}
 
       <main className="screen__body host-body">
         {/*

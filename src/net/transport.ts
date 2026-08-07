@@ -99,4 +99,12 @@ export interface RoomTransport {
 
   /** جولة جديدة بنفس اللاعبين. */
   resetRound(code: string): Promise<void>;
+
+  /**
+   * إنهاء الجلسة كلّها — المضيف فقط.
+   *
+   * يُعلَن الإغلاق في `meta.status` لا بالمغادرة الصامتة: أجهزة اللاعبين
+   * تتبع الحالة، فتقول لهم إن الجلسة انتهت بدل أن تنتظر مرحلةً لن تأتي.
+   */
+  closeRoom(code: string): Promise<void>;
 }

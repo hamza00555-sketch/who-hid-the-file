@@ -400,6 +400,10 @@ export class FirebaseTransport implements RoomTransport {
     await update(ref(db(), `${room(code)}/meta`), { secretStage: stage });
   }
 
+  async closeRoom(code: string): Promise<void> {
+    await update(ref(db(), `${room(code)}/meta`), { status: 'closed', updatedAt: Date.now() });
+  }
+
   async resetRound(code: string): Promise<void> {
     const playersSnapshot = await get(ref(db(), `${room(code)}/players`));
     const players = (playersSnapshot.val() ?? {}) as Record<string, PlayerPublic>;

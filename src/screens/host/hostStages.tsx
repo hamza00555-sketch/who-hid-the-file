@@ -39,6 +39,84 @@ function doneCount(progress: Progress, players: PlayerPublic[], key: keyof Playe
   return players.filter((player) => progress[player.id]?.[key]).length;
 }
 
+/* ══════════════════════════ قائمة الجولة ══════════════════════════ */
+
+/**
+ * لوحة المضيف أثناء الجولة: ضبطُ ما يجوز ضبطه، وإنهاء الجولة، والخروج.
+ *
+ * لم يكن للمضيف بعد بدء الجولة أي مخرج: لا تعديل إعداد، ولا إنهاء، ولا رجوع —
+ * إلا بإغلاق المتصفّح. وجولة تُلعب مع أصدقاء تحتاج الثلاثة: يُخفَّض العدّاد،
+ * أو تُعاد الجولة، أو يُقال «خلاص».
+ */
+export function HostRoundMenu({
+  settings,
+  onSettings,
+  onNewRound,
+  onClose,
+  onDismiss,
+}: {
+  settings: RoomSettings;
+  onSettings: (patch: Partial<RoomSettings>) => void;
+  onNewRound: () => void;
+  onClose: () => void;
+  onDismiss: () => void;
+}) {
+  const [confirming, setConfirming] = useState<'round' | 'close' | null>(null);
+
+  return (
+    <div className="host-menu" role="dialog" aria-label="إعدادات الجولة">
+      <div className="host-menu__sheet">
+        <div className="host-menu__top">
+          <h2>الجولة</h2>
+          <Button tone="ghost" onClick={onDismiss}>
+            إغلاق
+          </Button>
+        </div>
+
+        <SettingsPanel settings={settings} onChange={onSettings} inRound />
+
+        <div className="host-menu__actions">
+          {confirming === 'round' ? (
+            <Panel tone="coral">
+              <p>ستُلغى الجولة الحالية ويعود الجميع إلى الردهة. الأدوار تُوزَّع من جديد.</p>
+              <div className="row">
+                <Button tone="danger" onClick={onNewRound}>
+                  نعم، أعد الجولة
+                </Button>
+                <Button tone="ghost" onClick={() => setConfirming(null)}>
+                  تراجع
+                </Button>
+              </div>
+            </Panel>
+          ) : (
+            <Button full tone="quiet" onClick={() => setConfirming('round')}>
+              أنهِ الجولة وعُد إلى الردهة
+            </Button>
+          )}
+
+          {confirming === 'close' ? (
+            <Panel tone="coral">
+              <p>ستُغلق الجلسة على كل الأجهزة، ولن يمكن استئنافها بنفس الرمز.</p>
+              <div className="row">
+                <Button tone="danger" onClick={onClose}>
+                  نعم، أغلق الجلسة
+                </Button>
+                <Button tone="ghost" onClick={() => setConfirming(null)}>
+                  تراجع
+                </Button>
+              </div>
+            </Panel>
+          ) : (
+            <Button full tone="ghost" onClick={() => setConfirming('close')}>
+              أغلق الجلسة واخرج
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ══════════════════════════ الردهة ══════════════════════════ */
 
 export function HostLobbyStage({
@@ -363,17 +441,27 @@ function JoinPanel({ code, joinUrl }: { code: string; joinUrl: string }) {
   );
 }
 
+/**
+ * إعدادات الغرفة.
+ *
+ * `inRound` يُخفي ما لا يجوز تغييره وسط جولة: طريقة النرد ومصطلح المواعيد
+ * ومن يلعب. تغييرها بعد توزيع الأدوار يُنتج طاولة نصفها على قاعدة ونصفها على
+ * أخرى — بينما الصوت والمُهَل يمكن ضبطها في أي لحظة بلا أثر على ما مضى.
+ */
 function SettingsPanel({
   settings,
   onChange,
+  inRound = false,
 }: {
   settings: RoomSettings;
   onChange: (patch: Partial<RoomSettings>) => void;
+  inRound?: boolean;
 }) {
   return (
     <Panel className="settings-panel">
       <h3>إعدادات الجولة</h3>
 
+      {!inRound && (
       <fieldset className="settings-panel__field">
         <legend>طريقة تحديد موعد الاستيقاظ</legend>
         <div className="settings-panel__choices">
@@ -391,7 +479,9 @@ function SettingsPanel({
           />
         </div>
       </fieldset>
+      )}
 
+      {!inRound && (
       <fieldset className="settings-panel__field">
         <legend>مصطلح المواعيد</legend>
         <div className="settings-panel__choices">
@@ -407,7 +497,9 @@ function SettingsPanel({
           />
         </div>
       </fieldset>
+      )}
 
+      {!inRound && (
       <fieldset className="settings-panel__field">
         <legend>من يلعب</legend>
         <div className="settings-panel__choices">
@@ -425,7 +517,31 @@ function SettingsPanel({
           />
         </div>
       </fieldset>
+      )}
 
+      {/*
+        إطفاء الراوي لا يُسكت اللعبة فقط: بلا صوت لا شيء يقود المراحل، فتصير
+        الشاشة كلّها زرًّا ينقل الليلة بلمسة. راجع `night-tap`.
+      */}
+      <fieldset className="settings-panel__field">
+        <legend>التعليق الصوتي</legend>
+        <div className="settings-panel__choices">
+          <Choice
+            checked={settings.voiceEnabled}
+            onChange={() => onChange({ voiceEnabled: true })}
+            title="راوٍ يقود الليل"
+            note="يعلن المواعيد ويعدّ الوقت تلقائيًا"
+          />
+          <Choice
+            checked={!settings.voiceEnabled}
+            onChange={() => onChange({ voiceEnabled: false })}
+            title="بلا تعليق صوتي"
+            note="تنقل الليالي بلمسة على الشاشة"
+          />
+        </div>
+      </fieldset>
+
+      {settings.voiceEnabled && (
       <fieldset className="settings-panel__field">
         <legend>صوت الراوي</legend>
         <div className="settings-panel__choices">
@@ -441,12 +557,14 @@ function SettingsPanel({
           />
         </div>
       </fieldset>
+      )}
 
       {/*
         مخرج للحالة التي لا يستطيع فيها الجهاز تشغيل التسجيلات — تمنعها سياسة
         التشغيل التلقائي في بعض المتصفحات فيسكت الراوي بلا سبب ظاهر. زرٌّ
         واحد يُرجع الصوت الآلي، وجولة بصوت خشن خير من جولة صامتة.
       */}
+      {settings.voiceEnabled && (
       <fieldset className="settings-panel__field">
         <legend>مصدر النطق</legend>
         <div className="settings-panel__choices">
@@ -464,6 +582,7 @@ function SettingsPanel({
           />
         </div>
       </fieldset>
+      )}
 
       <label className="settings-panel__row">
         <span>مدة العد التنازلي في كل مرحلة</span>
@@ -492,14 +611,6 @@ function SettingsPanel({
         <output>{Math.round(settings.discussionSeconds / 60)} دقيقة</output>
       </label>
 
-      <label className="settings-panel__row settings-panel__row--switch">
-        <span>الصوت والتعليق</span>
-        <input
-          type="checkbox"
-          checked={settings.voiceEnabled}
-          onChange={(event) => onChange({ voiceEnabled: event.target.checked })}
-        />
-      </label>
     </Panel>
   );
 }

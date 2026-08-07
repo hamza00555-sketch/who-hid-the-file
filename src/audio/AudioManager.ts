@@ -119,6 +119,21 @@ export class AudioManager {
   /** يشغّل تسلسل جمل بالترتيب. يلغي أي تسلسل جارٍ. */
   async play(lines: VoiceLine[]): Promise<void> {
     this.stop();
+
+    /*
+      ── راوٍ مُطفأ لا يمرّ من هنا إطلاقًا ──
+
+      كان التسلسل يمشي كاملًا مع الصوت مُطفأ: لا نطق، لكن الجمل تُعرض واحدةً
+      واحدة وتُنتظر مُهَلها. فيبقى على الشاشة سطرٌ لم يُقَل، وتتأخّر المرحلة
+      بثوانٍ بلا سبب.
+      وأسوأ من ذلك أن `stop()` من الخارج لا يُنقذ: أول سطر هنا كان يُصفّر
+      الإلغاء، فأيّ إيقاف يسبق البدء يضيع.
+    */
+    if (!this.settings.enabled) {
+      this.emitCaption(null);
+      return;
+    }
+
     this.cancelled = false;
     this.queue = [...lines];
     this.speaking = true;

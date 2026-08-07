@@ -19,6 +19,7 @@ import { SceneBackdrop } from '../../ui/components/SceneBackdrop';
 import { Badge, Button, ExitButton, Panel, WaitingNote } from '../../ui/components/kit';
 import {
   PlayerDiceStage,
+  PlayerDiscussionStage,
   PlayerLobbyStage,
   PlayerNightStage,
   PlayerResultsStage,
@@ -104,6 +105,28 @@ export function PlayerScreen() {
             </Button>
           </>
         )}
+      </Shell>
+    );
+  }
+
+  /*
+    المضيف أغلق الجلسة: تُقال بصراحة بدل انتظار مرحلة لن تأتي.
+    الإغلاق يصل عبر `meta.status` — لا بمغادرة صامتة.
+  */
+  if (state?.meta.status === 'closed') {
+    return (
+      <Shell>
+        <h2>انتهت الجلسة</h2>
+        <p className="lede">أغلق المضيف الجلسة. شكرًا على اللعب!</p>
+        <Button
+          size="lg"
+          onClick={() => {
+            forgetSession();
+            navigate('/');
+          }}
+        >
+          الرئيسية
+        </Button>
       </Shell>
     );
   }
@@ -241,11 +264,13 @@ export function PlayerScreen() {
         )}
 
         {phase === 'discussion' && (
-          <PlayerWaitStage
-            title="ابدؤوا النقاش"
-            note="تحدثوا مباشرة مع بعضكم. لا تعرضوا شاشاتكم."
-            avatarId={me.avatarId}
-            state="suspicious"
+          <PlayerDiscussionStage
+            code={code}
+            me={me}
+            secret={secret}
+            players={players}
+            settings={state.settings}
+            acked={state.progress[me.id]?.secretAck ?? false}
           />
         )}
 

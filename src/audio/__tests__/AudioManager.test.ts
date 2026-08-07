@@ -221,6 +221,47 @@ describe('حارس زمني للملف الصامت', () => {
   });
 });
 
+/*
+  وضع «بلا تعليق صوتي»: المضيف يقود الليل بلمسة، والراوي مُطفأ تمامًا. أي جملة
+  تمرّ من الطابور هنا تعني سطرًا معروضًا لم يُقَل، ومهلةً تُنتظر بلا سبب.
+*/
+describe('راوٍ مُطفأ', () => {
+  it('لا يُشغّل ملفًا ولا صوتًا ولا ينتظر مهلة', async () => {
+    vi.spyOn(GAME_CONFIG, 'hasRecordedVoice', 'get').mockReturnValue(true);
+    const played = stubAudio();
+    stubFetch(['/audio/male/night.start.1.mp3']);
+
+    const manager = new AudioManager();
+    manager.configure({ ...BASE, enabled: false, voice: 'male', source: 'recorded' });
+
+    const started = Date.now();
+    await manager.play([
+      { ...LINE, pauseAfter: 3000 },
+      { ...LINE, pauseAfter: 3000 },
+    ]);
+
+    expect(played).toEqual([]);
+    expect(spoken).toEqual([]);
+    expect(Date.now() - started).toBeLessThan(500);
+  });
+
+  it('يمسح الجملة المعروضة بدل تركها معلّقة', async () => {
+    const manager = new AudioManager();
+    const captions: (string | null)[] = [];
+    manager.onCaption((caption) => captions.push(caption));
+
+    manager.configure({ ...BASE, voice: 'male', source: 'tts' });
+    stubAudio();
+    stubFetch([]);
+    await manager.play([LINE]);
+    expect(captions).toContain('بدأ الليل.');
+
+    manager.configure({ enabled: false });
+    await manager.play([LINE]);
+    expect(captions.at(-1)).toBeNull();
+  });
+});
+
 describe('مصدر النطق المختار في الإعدادات', () => {
   it('«صوت الجهاز» يتخطّى الملفات ولو كانت موجودة', async () => {
     vi.spyOn(GAME_CONFIG, 'hasRecordedVoice', 'get').mockReturnValue(true);

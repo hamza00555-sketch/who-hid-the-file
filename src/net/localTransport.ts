@@ -384,6 +384,12 @@ export class LocalTransport implements RoomTransport {
     });
   }
 
+  async closeRoom(code: string): Promise<void> {
+    this.mutate(code, (doc) => {
+      doc.meta.status = 'closed';
+    });
+  }
+
   async resetRound(code: string): Promise<void> {
     this.mutate(code, (doc) => {
       doc.meta.roundId = newRoundId();

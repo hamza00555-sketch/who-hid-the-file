@@ -827,16 +827,71 @@ export function PlayerSecretStage({
     return <WaitingNote>لحظة واحدة</WaitingNote>;
   }
 
-  /*
-    ── كل ما يملكه اللاعب في شاشة واحدة ──
+  const blocks = secretBlocks(secret, players, settings, byId);
 
-    كانت الشاشة تعرض **أول** معلومة تنطبق ثم تتوقف. ومن فحص جاره ثم اختاره
-    المُخفي متعاونًا كان يفقد نتيجة فحصه كاملةً: يقرؤها لحظةً في ليلته، ثم
-    يحلّ إشعار المتعاون محلّها ولا تعود.
+  if (secret.inspection && !secret.inspection.revealedSlot) {
+    return <WaitingNote>جارٍ كشف الموعد</WaitingNote>;
+  }
 
-    والمعلومتان مستقلّتان تمامًا — واحدة عمّا رآه، وأخرى عمّن صار معه — فلا
-    سبب لأن تُلغي إحداهما الأخرى. تُجمَعان خلف كشف واحد وزرّ واحد.
-  */
+  /* ── لا معلومة: نفس شكل الشاشة ونفس الزر حتى لا يكشف الانتظار أحدًا ── */
+  if (blocks.length === 0) {
+    return (
+      <>
+        <div className="role-cover role-cover--empty" aria-hidden="true">
+          <span>لا معلومة</span>
+        </div>
+        <h2>لا توجد معلومة لك هذه الجولة</h2>
+        <p className="lede">اعتمد على ما سمعته ورأيته حول الطاولة.</p>
+        <Button size="xl" full onClick={() => void transport.ack(code, me.id, 'secretAck')}>
+          فهمت
+        </Button>
+      </>
+    );
+  }
+
+  if (!gate.revealed) {
+    return (
+      <>
+        <div className="role-cover role-cover--secret" aria-hidden="true">
+          <span>لك معلومة</span>
+        </div>
+        <p className="lede">تأكد أن لا أحد ينظر إلى شاشتك.</p>
+        <Button size="xl" full onClick={gate.reveal}>
+          أظهر المعلومة
+        </Button>
+      </>
+    );
+  }
+
+  return (
+    <div className="secret-sheet">
+      {blocks}
+      <Button size="xl" full onClick={() => void transport.ack(code, me.id, 'secretAck')}>
+        حفظت المعلومة
+      </Button>
+    </div>
+  );
+}
+
+/**
+ * كل ما يملكه اللاعب من معلومة سرّية، مفصولًا كتلةً كتلة.
+ *
+ * ── لماذا قائمة لا سلسلة `if/return` ──
+ *
+ * كانت الشاشة تعرض **أول** معلومة تنطبق ثم تتوقف. ومن فحص جاره ثم اختاره
+ * المُخفي متعاونًا كان يفقد نتيجة فحصه كاملةً: يقرؤها لحظةً في ليلته، ثم يحلّ
+ * إشعار المتعاون محلّها ولا تعود. والمعلومتان مستقلّتان — واحدة عمّا رآه
+ * وأخرى عمّن صار معه — فلا سبب لأن تُلغي إحداهما الأخرى.
+ *
+ * وهي مشتركة بين المرحلة السرية وشاشة النقاش، فمن غاب جهازه لحظةَ الإعلان
+ * يجدها حين يعود.
+ */
+function secretBlocks(
+  secret: PlayerSecret,
+  players: PlayerPublic[],
+  settings: RoomSettings,
+  byId: Record<string, PlayerPublic | undefined>,
+): ReactNode[] {
   const allies = secret.knownAllies
     .map((id) => byId[id]?.name)
     .filter(Boolean) as string[];
@@ -911,33 +966,62 @@ export function PlayerSecretStage({
     );
   }
 
-  if (secret.inspection && !inspected) {
-    return <WaitingNote>جارٍ كشف الموعد</WaitingNote>;
-  }
+  return blocks;
+}
 
-  /* ── لا معلومة: نفس شكل الشاشة ونفس الزر حتى لا يكشف الانتظار أحدًا ── */
-  if (blocks.length === 0) {
+/* ══════════════════════ النقاش ══════════════════════ */
+
+/**
+ * شاشة النقاش — ومعها معلومة من غاب جهازه.
+ *
+ * المضيف ينتقل إلى النقاش حين يؤكّد **المتصلون** إجراءاتهم السرية، فمن انقطع
+ * جهازه لحظة الإعلان يعود إلى مرحلة تجاوزته. والمعلومة موجودة في سرّه — كُتبت
+ * ولم تُقرأ. فتُعرض هنا: من اختاره المُخفي متعاونًا يبقى متعاونًا ولو غاب
+ * جهازه، ويجدها حين يرجع.
+ */
+export function PlayerDiscussionStage({
+  code,
+  me,
+  secret,
+  players,
+  settings,
+  acked,
+}: {
+  code: string;
+  me: PlayerPublic;
+  secret: PlayerSecret | null;
+  players: PlayerPublic[];
+  settings: RoomSettings;
+  acked: boolean;
+}) {
+  const { transport } = useSession();
+  const gate = useRevealGate();
+  const byId = useMemo(
+    () => Object.fromEntries(players.map((player) => [player.id, player])),
+    [players],
+  );
+
+  const blocks = secret ? secretBlocks(secret, players, settings, byId) : [];
+
+  if (acked || blocks.length === 0) {
     return (
-      <>
-        <div className="role-cover role-cover--empty" aria-hidden="true">
-          <span>لا معلومة</span>
-        </div>
-        <h2>لا توجد معلومة لك هذه الجولة</h2>
-        <p className="lede">اعتمد على ما سمعته ورأيته حول الطاولة.</p>
-        <Button size="xl" full onClick={() => void transport.ack(code, me.id, 'secretAck')}>
-          فهمت
-        </Button>
-      </>
+      <PlayerWaitStage
+        title="ابدؤوا النقاش"
+        note="تحدثوا مباشرة مع بعضكم. لا تعرضوا شاشاتكم."
+        avatarId={me.avatarId}
+        state="suspicious"
+      />
     );
   }
 
   if (!gate.revealed) {
     return (
       <>
+        <h2>ابدؤوا النقاش</h2>
+        <p className="lede">وصلتك معلومة سرّية لم تقرأها بعد.</p>
         <div className="role-cover role-cover--secret" aria-hidden="true">
           <span>لك معلومة</span>
         </div>
-        <p className="lede">تأكد أن لا أحد ينظر إلى شاشتك.</p>
         <Button size="xl" full onClick={gate.reveal}>
           أظهر المعلومة
         </Button>

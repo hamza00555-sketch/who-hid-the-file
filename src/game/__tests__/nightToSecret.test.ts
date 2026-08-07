@@ -99,6 +99,33 @@ describe('الفحص يصمد حتى المرحلة السرية', () => {
   });
 
   /*
+    ── جهاز غائب لا يُلغي اختيارًا ──
+
+    المُخفي يختار من يقف معه، وقد يكون جهاز المختار منقطعًا في تلك اللحظة —
+    شبكة تعثّرت، أو خرج من التطبيق. التحويل يكتبه **المضيف** في سرّ المختار،
+    فلا علاقة له بحضوره: يعود فيجد نفسه متعاونًا.
+  */
+  it('يبقى المختار متعاونًا ولو كان جهازه منقطعًا', async () => {
+    await enterAccompliceNight(asTransport(fake), 'ABCD', 6);
+    fake.secrets.p1!.accompliceChoice = ['p4'];
+    // p4 غائب: لا كتابة منه ولا قراءة — الحالة تُبنى عند المضيف وحده
+    await closeAccompliceNight(asTransport(fake), 'ABCD', 6);
+
+    expect(fake.secrets.p4!.role).toBe('accomplice');
+    expect(fake.secrets.p4!.becameAccomplice).toBe(true);
+    expect(fake.secrets.p4!.knownAllies).toEqual(['p1']);
+    expect(fake.secrets.p1!.knownAllies).toEqual(['p4']);
+  });
+
+  it('لا يُستبدل المختار الغائب باختيار احتياطي', async () => {
+    await enterAccompliceNight(asTransport(fake), 'ABCD', 6);
+    fake.secrets.p1!.accompliceChoice = ['p6'];
+    await closeAccompliceNight(asTransport(fake), 'ABCD', 6);
+    // الاحتياطي لا يعمل إلا حين لا يصل اختيار إطلاقًا
+    expect(accompliceIds(fake.secrets)).toEqual(['p6']);
+  });
+
+  /*
     ── السباق الذي يمحو المعلومة ──
 
     خطوة المتعاونين تقرأ الأسرار ثم تكتبها **كاملةً**. وفحصٌ يُحلّ بين القراءة

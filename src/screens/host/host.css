@@ -1239,3 +1239,122 @@
   color: var(--text-muted);
   font-size: 0.9rem;
 }
+
+/*
+  ── طبقة اللمس في الليل الصامت ──
+
+  **فوق المحتوى لا تحته.** وضعها تحته لا يعمل إطلاقًا: حاوية المشهد تملأ
+  الشاشة حتى حيث تبدو فارغة، فتبتلع كل لمسة قبل أن تصل. (قِيس: تسع عشرة لمسة
+  في منتصف الشاشة لم تنقل الليلة خطوةً واحدة.)
+
+  فتُرفع الطبقة فوق كل شيء، ويُرفع فوقها وحدَه ما يجب أن يبقى قابلًا للضغط:
+  شريط المضيف، وشاشة فعله الشخصي، ولوحة الخطأ. وما عدا ذلك في الليل نصٌّ
+  يُقرأ لا يُضغط — فالطبقة عليه صحيحة تمامًا.
+
+  الإشارة في الأسفل خافتة عمدًا: الجهاز على الطاولة في غرفة معتمة، وما يُقرأ
+  منها يُقرأ مرة واحدة في أول ليلة.
+*/
+.night-tap {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s-1);
+  /*
+    مسافة تكفي شريط جملة الراوي: الإشارة تحته كانت مختفية تمامًا خلفه.
+    (قِيست على شاشة ٣٩٠×٨٤٤ — الشريط يشغل نحو ٦rem بحواشيه.)
+  */
+  padding-bottom: calc(7rem + env(safe-area-inset-bottom));
+  background: transparent;
+  border: 0;
+  color: oklch(0.7 0.03 250);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.night-tap:active {
+  background: oklch(0.5 0.05 250 / 0.08);
+}
+
+.night-tap__hint {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--amber);
+}
+
+.night-tap__note {
+  font-size: 0.85rem;
+}
+
+/* ما يبقى فوق الطبقة: كل ما يُضغط فعلًا في الليل */
+.screen--host .host-bar,
+.screen--host .host-stage-error,
+.screen--host .night-awake,
+.screen--host .host-caption {
+  position: relative;
+  z-index: 31;
+}
+
+/* ── زر قائمة الجولة ── */
+.host-bar__menu {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  border: 2px solid var(--night-edge);
+  background: var(--night);
+  color: var(--text);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.host-bar__menu:active {
+  background: var(--night-lift);
+}
+
+/*
+  ── لوحة الجولة ──
+
+  تغطّي الشاشة كاملة لا نافذة صغيرة: تُفتح على جوال في يد المضيف وسط جولة،
+  فالقراءة والضغط أهمّ من رؤية ما تحتها.
+*/
+.host-menu {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal, 50);
+  background: oklch(0.12 0.03 264 / 0.92);
+  overflow-y: auto;
+  padding: var(--s-3);
+  padding-top: max(var(--s-3), env(safe-area-inset-top));
+  padding-bottom: max(var(--s-5), env(safe-area-inset-bottom));
+}
+
+.host-menu__sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  width: 100%;
+  max-width: 34rem;
+  margin-inline: auto;
+}
+
+.host-menu__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.host-menu__top h2 {
+  margin: 0;
+}
+
+.host-menu__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
