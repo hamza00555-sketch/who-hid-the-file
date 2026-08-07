@@ -827,28 +827,29 @@ export function PlayerSecretStage({
     return <WaitingNote>لحظة واحدة</WaitingNote>;
   }
 
-  /* ── إشعار المتعاون ── */
-  if (secret.becameAccomplice) {
-    if (!gate.revealed) {
-      return (
-        <>
-          <div className="role-cover role-cover--secret" aria-hidden="true">
-            <span>لك معلومة</span>
-          </div>
-          <p className="lede">تأكد أن لا أحد ينظر إلى شاشتك.</p>
-          <Button size="xl" full onClick={gate.reveal}>
-            أظهر المعلومة
-          </Button>
-        </>
-      );
-    }
-    const allies = secret.knownAllies
-      .map((id) => byId[id]?.name)
-      .filter(Boolean) as string[];
+  /*
+    ── كل ما يملكه اللاعب في شاشة واحدة ──
 
-    return (
-      <>
-        <Character characterId={me.avatarId} state="hiding" size={170} />
+    كانت الشاشة تعرض **أول** معلومة تنطبق ثم تتوقف. ومن فحص جاره ثم اختاره
+    المُخفي متعاونًا كان يفقد نتيجة فحصه كاملةً: يقرؤها لحظةً في ليلته، ثم
+    يحلّ إشعار المتعاون محلّها ولا تعود.
+
+    والمعلومتان مستقلّتان تمامًا — واحدة عمّا رآه، وأخرى عمّن صار معه — فلا
+    سبب لأن تُلغي إحداهما الأخرى. تُجمَعان خلف كشف واحد وزرّ واحد.
+  */
+  const allies = secret.knownAllies
+    .map((id) => byId[id]?.name)
+    .filter(Boolean) as string[];
+
+  const inspected = secret.inspection?.revealedSlot
+    ? { target: byId[secret.inspection.targetId], slot: secret.inspection.revealedSlot }
+    : null;
+
+  const blocks: ReactNode[] = [];
+
+  if (secret.becameAccomplice) {
+    blocks.push(
+      <div className="secret-block" key="accomplice">
         <h2>صرت {GAME_CONFIG.roles.accomplice.label}</h2>
         <Panel tone="violet">
           {allies.length > 0 ? (
@@ -859,65 +860,70 @@ export function PlayerSecretStage({
             <p>لا تعرف هوية مُخفي الملف — لكنك تفوز بفوزه.</p>
           )}
         </Panel>
-        <p className="lede">تفوز إذا لم يُكشف مُخفي الملف في التصويت.</p>
-        <Button size="xl" full onClick={() => void transport.ack(code, me.id, 'secretAck')}>
-          حفظت المعلومة
-        </Button>
-      </>
+        <p className="eyebrow-note">تفوز إذا لم يُكشف مُخفي الملف في التصويت.</p>
+      </div>,
     );
   }
 
-  /* ── المُخفي يعرف متعاونيه ── */
-  if (secret.role === 'hider' && secret.knownAllies.length > 0) {
-    if (!gate.revealed) {
-      return (
-        <>
-          <div className="role-cover role-cover--secret" aria-hidden="true">
-            <span>لك معلومة</span>
-          </div>
-          <Button size="xl" full onClick={gate.reveal}>
-            أظهر المعلومة
-          </Button>
-        </>
-      );
-    }
-    return (
-      <>
+  if (secret.role === 'hider' && allies.length > 0) {
+    blocks.push(
+      <div className="secret-block" key="hider">
         <h2>متعاونوك</h2>
         <Panel tone="violet">
           <p>
-            <strong>
-              {secret.knownAllies.map((id) => byId[id]?.name ?? '—').join('، ')}
-            </strong>
+            <strong>{allies.join('، ')}</strong>
           </p>
         </Panel>
-        <Button size="xl" full onClick={() => void transport.ack(code, me.id, 'secretAck')}>
-          حفظت المعلومة
-        </Button>
-      </>
+      </div>,
+    );
+  }
+
+  if (inspected) {
+    blocks.push(
+      <div className="secret-block" key="inspection">
+        <h2 className="secret-block__label">موعد جارك</h2>
+        <Panel tone="night">
+          <p className="lede">{inspected.target?.name ?? '—'}</p>
+          <p className="slot-headline">{slotLabel(inspected.slot, settings.slotNaming)}</p>
+        </Panel>
+        <p className="eyebrow-note">
+          هذا موعد استيقاظه فقط. لا يخبرك بدوره ولا هل استيقظ فعلًا.
+        </p>
+      </div>,
     );
   }
 
   /*
-    ── الفحص لم يُستخدم ──
-
-    لا يُعرض المُنتقي هنا. الفحص يقع في لحظة واحدة: وهو مستيقظ في موعده — على
-    جهازه في النمط الرقمي، وبرفع كوب جاره في نمط النرد. تقديم فرصة ثانية بعد
-    انتهاء الليل يجعل النمطين لعبتين مختلفتين، ويمنح من فوّتها ميزة على من
+    الفحص يقع في لحظة واحدة — وهو مستيقظ في موعده — ولا يُعرض المُنتقي هنا:
+    فرصة ثانية بعد الليل تجعل نمطي اللعب لعبتين، وتمنح من فوّتها ميزة على من
     استعملها في وقتها.
   */
   if (canInspect(secret, players.length)) {
-    return (
-      <>
-        <div className="role-cover role-cover--empty" aria-hidden="true">
-          <span>لا معلومة</span>
-        </div>
+    blocks.push(
+      <div className="secret-block" key="missed">
         <h2>لم تستعمل فحصك</h2>
         <p className="lede">
           {settings.diceMode === 'physical'
             ? 'كان بإمكانك رفع كوب أحد جاريك أثناء استيقاظك.'
             : 'كان بإمكانك اختيار أحد جاريك أثناء استيقاظك.'}
         </p>
+      </div>,
+    );
+  }
+
+  if (secret.inspection && !inspected) {
+    return <WaitingNote>جارٍ كشف الموعد</WaitingNote>;
+  }
+
+  /* ── لا معلومة: نفس شكل الشاشة ونفس الزر حتى لا يكشف الانتظار أحدًا ── */
+  if (blocks.length === 0) {
+    return (
+      <>
+        <div className="role-cover role-cover--empty" aria-hidden="true">
+          <span>لا معلومة</span>
+        </div>
+        <h2>لا توجد معلومة لك هذه الجولة</h2>
+        <p className="lede">اعتمد على ما سمعته ورأيته حول الطاولة.</p>
         <Button size="xl" full onClick={() => void transport.ack(code, me.id, 'secretAck')}>
           فهمت
         </Button>
@@ -925,40 +931,27 @@ export function PlayerSecretStage({
     );
   }
 
-  /* ── نتيجة الفحص بعد أن يكتبها المضيف ── */
-  if (secret.inspection?.revealedSlot) {
-    const target = byId[secret.inspection.targetId];
+  if (!gate.revealed) {
     return (
       <>
-        <Character characterId={target?.avatarId ?? me.avatarId} state="asleep" size={150} />
-        <p className="lede">{target?.name}</p>
-        <h2 className="slot-headline">{slotLabel(secret.inspection.revealedSlot)}</h2>
-        <p className="eyebrow-note">
-          هذا موعد استيقاظه فقط. لا يخبرك بدوره ولا هل استيقظ فعلًا.
-        </p>
-        <Button size="xl" full onClick={() => void transport.ack(code, me.id, 'secretAck')}>
-          حفظت المعلومة
+        <div className="role-cover role-cover--secret" aria-hidden="true">
+          <span>لك معلومة</span>
+        </div>
+        <p className="lede">تأكد أن لا أحد ينظر إلى شاشتك.</p>
+        <Button size="xl" full onClick={gate.reveal}>
+          أظهر المعلومة
         </Button>
       </>
     );
   }
 
-  if (secret.inspection) {
-    return <WaitingNote>جارٍ كشف الموعد</WaitingNote>;
-  }
-
-  /* ── لا معلومة: نفس شكل الشاشة ونفس الزر حتى لا يكشف الانتظار أحدًا ── */
   return (
-    <>
-      <div className="role-cover role-cover--empty" aria-hidden="true">
-        <span>لا معلومة</span>
-      </div>
-      <h2>لا توجد معلومة لك هذه الجولة</h2>
-      <p className="lede">اعتمد على ما سمعته ورأيته حول الطاولة.</p>
+    <div className="secret-sheet">
+      {blocks}
       <Button size="xl" full onClick={() => void transport.ack(code, me.id, 'secretAck')}>
-        فهمت
+        حفظت المعلومة
       </Button>
-    </>
+    </div>
   );
 }
 

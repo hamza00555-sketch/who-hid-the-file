@@ -17,7 +17,7 @@
 import { describe, expect, it } from 'vitest';
 import { emptySecret, hydrateSecret, hydrateSecrets } from '../deal';
 import { canInspect, computeSoloSlots, nightViewFor } from '../night';
-import { buildResults } from '../vote';
+import { buildResults, hydrateResults } from '../vote';
 import { makePlayers } from './helpers';
 
 /** يحاكي ما تفعله Firebase بالكائن قبل تخزينه. */
@@ -133,6 +133,36 @@ describe('نتيجة الجولة صالحة للكتابة', () => {
     حزام ثانٍ: الترميم هو الدفاع الأول، لكن `buildResults` تُستدعى بأسرار قد
     تأتي من مسار لم يمرّ به. فلا تعتمد على غيرها في ألّا تكتب `undefined`.
   */
+  /*
+    ── الانهيار الذي أقفل الجولة عند نهايتها ──
+
+    من لم يستيقظ معه أحد يعود صفّه من الشبكة بلا `wokeWith` إطلاقًا، فتنهار
+    شاشة النتائج على `row.wokeWith.length`. وهذا يقع بعد الليل والنقاش
+    والتصويت — أي بعد كل شيء، وعلى شاشة لا مخرج منها.
+  */
+  it('نتيجة عائدة من الشبكة تُقرأ بلا انهيار', () => {
+    const secrets = round();
+    const written = buildResults(secrets, { p1: 'p2', p2: 'p1' }, players);
+    const back = hydrateResults(asFirebaseStores(written))!;
+
+    expect(back.reveal).toHaveLength(4);
+    for (const row of back.reveal) {
+      expect(() => row.wokeWith.length).not.toThrow();
+      expect(Array.isArray(row.effectiveSlots)).toBe(true);
+      expect(Array.isArray(row.soloSlots)).toBe(true);
+    }
+    expect(Array.isArray(back.accompliceIds)).toBe(true);
+    expect(Array.isArray(back.tally.topVoted)).toBe(true);
+    expect(back.tally.counts).toBeTypeOf('object');
+  });
+
+  it('نتيجة بلا أصوات إطلاقًا تُقرأ أيضًا', () => {
+    const back = hydrateResults(asFirebaseStores(buildResults(round(), {}, players)))!;
+    expect(back.tally.totalVotes).toBe(0);
+    expect(back.tally.topVoted).toEqual([]);
+    expect(back.reveal.every((row) => row.votedFor === null)).toBe(true);
+  });
+
   it('تصمد أمام فحص غير مُرمَّم قادم من الشبكة مباشرة', () => {
     const secrets = round();
     // كما تعود من Firebase حرفيًا: بلا حقل `revealedSlot` إطلاقًا

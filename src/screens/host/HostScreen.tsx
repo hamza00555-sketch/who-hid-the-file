@@ -27,7 +27,7 @@ import { slotOfNightPhase, type Phase } from '../../game/types';
 import { forgetSession, usePresence, useRoom, useSecret, useSession } from '../../net/session';
 import { SceneBackdrop, type SceneTone } from '../../ui/components/SceneBackdrop';
 import { Badge, Button, ExitButton, WaitingNote } from '../../ui/components/kit';
-import { HostPlayerPanel } from './HostPlayerPanel';
+import { HostPlayerPanel, hostNightActive } from './HostPlayerPanel';
 import {
   HostDiceStage,
   HostDiscussionStage,
@@ -591,7 +591,23 @@ export function HostScreen() {
           />
         )}
 
-        {(phase === 'night-intro' || isNight) && (
+        {/*
+          مشهد الراوي يختفي حين يكون لصاحب الجهاز فعلٌ شخصيّ في الليل: الشاشتان
+          معًا تجعلان الصفحة أطول من الجهاز، فتنزل نتيجة الفحص تحت الطيّة —
+          والأعين مغلقة حول الطاولة أصلًا، فلا أحد ينظر إلى مشهد الراوي الآن.
+        */}
+        {(phase === 'night-intro' || isNight) &&
+          !(
+            state.settings.hostPlays &&
+            me &&
+            hostNightActive(
+              secret,
+              phase,
+              slotOfNightPhase(phase),
+              players.length,
+              state.settings.diceMode,
+            )
+          ) && (
           <HostNightStage
             phase={phase}
             countdown={countdown}

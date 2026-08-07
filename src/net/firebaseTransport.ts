@@ -21,6 +21,7 @@ import {
 } from 'firebase/database';
 import { GAME_CONFIG } from '../config/game.config';
 import { hydrateSecret, hydrateSecrets } from '../game/deal';
+import { hydrateResults } from '../game/vote';
 import { EMPTY_PROGRESS, newRoundId } from '../game/types';
 import type {
   Phase,
@@ -231,7 +232,7 @@ export class FirebaseTransport implements RoomTransport {
       onValue(
         ref(db(), `${room(code)}/round/results`),
         (s) => {
-          parts.results = s.exists() ? (s.val() as RoundResults) : null;
+          parts.results = s.exists() ? hydrateResults(s.val()) : null;
           emit('results');
         },
         () => emit('results'),

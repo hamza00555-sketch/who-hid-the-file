@@ -71,6 +71,29 @@ export async function finalizeWakeSlots(
 }
 
 /**
+ * يكتب **من تغيّر فقط**، لا الخريطة كاملة.
+ *
+ * ── لماذا هذا التفصيل مهم ──
+ *
+ * كتابة الخريطة كاملة تُنفَّذ `set` على الفرع الأب: كل ما وصل بعد القراءة
+ * وقبل الكتابة يُمحى. وفي هذه اللحظة بالذات يصل شيء: لاعبٌ فحص جاره في آخر
+ * ليلة، والمضيف حلّ فحصه — فتُكتب خريطة قديمة فوقه ويضيع.
+ *
+ * وهذا ما يراه اللاعب: يقرأ موعد جاره في ليلته، ثم لا يجد شيئًا بعد الليل.
+ */
+async function writeChanged(
+  transport: RoomTransport,
+  code: string,
+  before: SecretMap,
+  after: SecretMap,
+): Promise<void> {
+  for (const [playerId, secret] of Object.entries(after)) {
+    if (JSON.stringify(before[playerId]) === JSON.stringify(secret)) continue;
+    await transport.writeSecret(code, playerId, secret);
+  }
+}
+
+/**
  * يفتح خطوة المتعاونين الليلية: يكتب الحصّة والمرشحين في سر المُخفي ثم يدخل
  * المرحلة. الكتابة **قبل** تغيير المرحلة حتى لا تصل شاشة الاختيار إلى جهاز
  * المُخفي قبل ما تعرضه.
@@ -81,7 +104,7 @@ export async function enterAccompliceNight(
   playerCount: number,
 ): Promise<void> {
   const secrets = await transport.readSecrets(code);
-  await transport.writeSecrets(code, prepareAccompliceStage(secrets, playerCount));
+  await writeChanged(transport, code, secrets, prepareAccompliceStage(secrets, playerCount));
   await transport.setPhase(code, 'night-accomplices');
 }
 
@@ -112,7 +135,7 @@ export async function closeAccompliceNight(
 
   const picked = autoPickAccomplices(secrets, playerCount, cryptoRng);
   if (picked.length === 0) return;
-  await transport.writeSecrets(code, applyAccomplices(secrets, picked, playerCount));
+  await writeChanged(transport, code, secrets, applyAccomplices(secrets, picked, playerCount));
 }
 
 /**
@@ -133,7 +156,7 @@ export async function applyPendingAccompliceChoice(
   if (hider.accompliceQuota === 0) return false; // طُبِّق من قبل
 
   const applied = applyAccomplices(secrets, choice, playerCount);
-  await transport.writeSecrets(code, {
+  await writeChanged(transport, code, secrets, {
     ...applied,
     [hider.playerId]: { ...applied[hider.playerId]!, accompliceChoice: null },
   });

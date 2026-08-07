@@ -20,6 +20,26 @@ import {
   PlayerVotingStage,
 } from '../player/playerStages';
 
+/**
+ * هل للمضيف فعلٌ شخصيّ في هذه اللحظة من الليل؟
+ *
+ * تُسأل من مكانين: هذه اللوحة لترسم، وشاشة المضيف لتُخفي مشهد الراوي تحتها.
+ * فبقاء المشهدين معًا يجعل الصفحة أطول من الشاشة، ويُخفي **نتيجة الفحص** تحت
+ * الطيّة — وهي كل ما يحتاجه صاحب الجهاز في تلك اللحظة.
+ */
+export function hostNightActive(
+  secret: PlayerSecret | null,
+  phase: Phase,
+  nightSlot: WakeSlot | null,
+  playerCount: number,
+  diceMode: RoomSettings['diceMode'],
+): boolean {
+  if (!phase.startsWith('night-')) return false;
+  const myTurn = nightSlot != null && (secret?.effectiveSlots.includes(nightSlot) ?? false);
+  const myCall = phase === 'night-accomplices' && secret?.role === 'hider';
+  return myTurn || myCall || nightViewFor(secret, nightSlot, playerCount, diceMode) !== 'blackout';
+}
+
 export function HostPlayerPanel({
   code,
   me,
@@ -91,11 +111,9 @@ export function HostPlayerPanel({
         ليلته لا يرى شيئًا، بينما هي أهم لحظة في دوره. السؤال الصحيح هنا
         «هل جاء موعده؟» لا «هل له فحص؟».
       */
-      const myTurn = nightSlot != null && (secret?.effectiveSlots.includes(nightSlot) ?? false);
-      const view = nightViewFor(secret, nightSlot, players.length, settings.diceMode);
-      // آخر الليل: للمُخفي شاشة اختيار، ولغيره لا شيء يُرسم فوق مشهد الراوي
-      const myCall = phase === 'night-accomplices' && secret?.role === 'hider';
-      if (!myTurn && !myCall && view === 'blackout') return null;
+      if (!hostNightActive(secret, phase, nightSlot, players.length, settings.diceMode)) {
+        return null;
+      }
       return (
         <PlayerNightStage
           code={code}

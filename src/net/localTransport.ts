@@ -11,6 +11,7 @@
 
 import { GAME_CONFIG } from '../config/game.config';
 import { hydrateSecret, hydrateSecrets } from '../game/deal';
+import { hydrateResults } from '../game/vote';
 import { EMPTY_PROGRESS, newRoundId } from '../game/types';
 import type {
   Phase,
@@ -90,7 +91,8 @@ function toState(doc: LocalDoc): RoomState {
     settings: doc.settings,
     players: doc.players,
     progress: doc.progress,
-    results: doc.results,
+    // نفس ترميم Firebase: التخزين هنا يحذف مثلها فيجب أن يُرمَّم مثلها
+    results: hydrateResults(doc.results),
     votesSubmitted: Object.keys(doc.votes).length,
   };
 }
@@ -372,7 +374,7 @@ export class LocalTransport implements RoomTransport {
 
   async writeResults(code: string, results: RoundResults): Promise<void> {
     this.mutate(code, (doc) => {
-      doc.results = results;
+      doc.results = stripLikeFirebase(results);
     });
   }
 

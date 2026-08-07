@@ -58,6 +58,21 @@ export class ScreenGuard extends Component<Props, State> {
               حدّث الصفحة
             </button>
           </div>
+          {/*
+            مخرج أخير: خطأ يتكرّر مع كل إعادة رسم يجعل الزرّين بلا فائدة —
+            تنهار الشاشة فورًا من جديد. الرئيسية تعمل دائمًا لأنها تُبدّل
+            المسار قبل أن يُعاد بناء الشاشة المنهارة.
+          */}
+          <button
+            type="button"
+            className="btn btn--md btn--ghost"
+            onClick={() => {
+              window.location.hash = '#/';
+              window.location.reload();
+            }}
+          >
+            العودة للرئيسية
+          </button>
         </div>
       </div>
     );

@@ -9,6 +9,53 @@ import type { PlayerPublic, RoundResults, VoteTally } from './types';
 
 export class VoteError extends Error {}
 
+/**
+ * يُعيد بناء نتيجة جولة قادمة من الشبكة إلى شكلها الكامل.
+ *
+ * نفس فخّ `hydrateSecret`: Firebase تحذف كل `null` وكل مصفوفة فارغة. ومن لم
+ * يستيقظ معه أحد يعود صفّه بلا `wokeWith` إطلاقًا، فتنهار شاشة النتائج على
+ * `row.wokeWith.length` — وتُقفل الجولة على شاشة عطل لا مخرج منها.
+ *
+ * وهذا يقع في **نهاية** الجولة تحديدًا: بعد الليل كلّه والنقاش والتصويت.
+ */
+export function hydrateResults(raw: unknown): RoundResults | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const value = raw as Partial<RoundResults> & Record<string, unknown>;
+
+  const list = <T,>(input: unknown): T[] => {
+    if (Array.isArray(input)) return input.filter((item) => item != null) as T[];
+    if (input && typeof input === 'object') return Object.values(input) as T[];
+    return [];
+  };
+
+  const tally = (value.tally ?? {}) as Partial<VoteTally>;
+
+  return {
+    tally: {
+      counts: (tally.counts ?? {}) as Record<string, number>,
+      topVoted: list<string>(tally.topVoted),
+      totalVotes: tally.totalVotes ?? 0,
+    },
+    winner: value.winner === 'team' ? 'team' : 'hiders',
+    hiderId: typeof value.hiderId === 'string' ? value.hiderId : '',
+    accompliceIds: list<string>(value.accompliceIds),
+    reveal: list<RoundResults['reveal'][number]>(value.reveal).map((row) => ({
+      playerId: row.playerId,
+      role: row.role ?? 'member',
+      effectiveSlots: list(row.effectiveSlots),
+      soloSlots: list(row.soloSlots),
+      wokeWith: list(row.wokeWith),
+      inspected: row.inspected
+        ? {
+            targetId: row.inspected.targetId,
+            revealedSlot: row.inspected.revealedSlot ?? null,
+          }
+        : null,
+      votedFor: row.votedFor ?? null,
+    })),
+  };
+}
+
 /** يتحقق من صلاحية صوت واحد قبل إرساله. */
 export function validateVote(
   voterId: string,

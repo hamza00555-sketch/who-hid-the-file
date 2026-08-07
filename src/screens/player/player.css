@@ -461,3 +461,43 @@
   font-size: 0.95rem;
   color: oklch(0.8 0.03 250);
 }
+
+/*
+  ── ورقة المعلومات السرية ──
+
+  قد يحمل اللاعب أكثر من معلومة في الجولة نفسها: فحصٌ استعمله، ودورٌ تغيّر.
+  كانت الشاشة تعرض أولاهما وتُسقط الأخرى. تُعرضان معًا الآن، مفصولتين بخطّ
+  خفيف حتى لا تُقرآ سطرًا واحدًا.
+*/
+.secret-sheet {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-4);
+  width: 100%;
+  max-width: 26rem;
+  margin-inline: auto;
+}
+
+.secret-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+  text-align: center;
+}
+
+.secret-block + .secret-block {
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--night-edge);
+}
+
+.secret-block .slot-headline {
+  margin: 0;
+}
+
+.secret-block__label {
+  color: var(--text-muted);
+  font-size: 1rem;
+}
