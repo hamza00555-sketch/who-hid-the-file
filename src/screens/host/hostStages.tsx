@@ -524,6 +524,23 @@ function SettingsPanel({
         الشاشة كلّها زرًّا ينقل الليلة بلمسة. راجع `night-tap`.
       */}
       <fieldset className="settings-panel__field">
+        <legend>موسيقى الردهة</legend>
+        <div className="settings-panel__choices">
+          <Choice
+            checked={settings.musicEnabled}
+            onChange={() => onChange({ musicEnabled: true })}
+            title="تعمل قبل الجولة"
+            note="تخفت من نفسها حين تبدأ"
+          />
+          <Choice
+            checked={!settings.musicEnabled}
+            onChange={() => onChange({ musicEnabled: false })}
+            title="بلا موسيقى"
+          />
+        </div>
+      </fieldset>
+
+      <fieldset className="settings-panel__field">
         <legend>التعليق الصوتي</legend>
         <div className="settings-panel__choices">
           <Choice

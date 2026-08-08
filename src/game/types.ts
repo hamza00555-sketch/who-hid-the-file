@@ -140,6 +140,8 @@ export interface RoomSettings {
   nightCountdownSeconds: number;
   discussionSeconds: number;
   voiceEnabled: boolean;
+  /** موسيقى الردهة قبل بدء الجولة — على جهاز المضيف وحده */
+  musicEnabled: boolean;
   /**
    * هل يلعب صاحب الجهاز الرئيسي أيضًا؟
    *

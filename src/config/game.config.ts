@@ -54,6 +54,7 @@ export const GAME_CONFIG = {
     nightStageLeadInSeconds: 4,
     discussionSeconds: 180,
     voiceEnabled: true,
+    musicEnabled: true,
     hostPlays: false,
     narratorVoice: 'male' as 'male' | 'female',
     narratorSource: 'recorded' as 'recorded' | 'tts',
@@ -68,6 +69,9 @@ export const GAME_CONFIG = {
    * آخره، فيُغلق الليل قبل أن يُقرأ.
    */
   nightReadSeconds: 9,
+
+  /** موسيقى ما قبل الجولة — تدور في الردهة على جهاز المضيف وحده */
+  lobbyMusicSrc: '/audio/music/lobby.mp3',
 
   /** رمز الجلسة: حروف واضحة بلا التباس بصري */
   roomCode: {

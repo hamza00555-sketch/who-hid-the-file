@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useLobbyMusic } from '../../audio/useLobbyMusic';
 import { useNarrator } from '../../audio/useNarrator';
 import { GAME_CONFIG } from '../../config/game.config';
 import {
@@ -95,6 +96,12 @@ export function HostScreen() {
   const [pendingStep, setPendingStep] = useState<{ label: string; run: () => Promise<void> } | null>(
     null,
   );
+  /*
+    موسيقى ما قبل الجولة: تدور في الردهة وحدها وتخفت حين تبدأ الجولة. جهاز
+    المضيف يُسمِعها للطاولة، كما يفعل بالراوي — ولا صوت من جهاز لاعب إطلاقًا.
+  */
+  useLobbyMusic(isHost && phase === 'lobby' && (settings?.musicEnabled ?? true));
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [countdown, setCountdown] = useState<{ value: number; total: number } | null>(null);
   const [stageError, setStageError] = useState<string | null>(null);

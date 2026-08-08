@@ -32,6 +32,7 @@ const DEFAULT_SETTINGS: RoomSettings = {
   nightCountdownSeconds: GAME_CONFIG.defaults.nightCountdownSeconds,
   discussionSeconds: GAME_CONFIG.defaults.discussionSeconds,
   voiceEnabled: GAME_CONFIG.defaults.voiceEnabled,
+  musicEnabled: GAME_CONFIG.defaults.musicEnabled,
   hostPlays: GAME_CONFIG.defaults.hostPlays,
   narratorVoice: GAME_CONFIG.defaults.narratorVoice,
   narratorSource: GAME_CONFIG.defaults.narratorSource,
