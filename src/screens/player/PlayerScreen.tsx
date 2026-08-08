@@ -1,12 +1,16 @@
 /**
- * جهاز اللاعب — شاشة شخصية صامتة.
+ * جهاز اللاعب — شاشة شخصية.
  *
- * لا يصدر منها صوت إطلاقًا، ولا تعرض إلا ما يخص صاحبها.
- * أثناء الليل تصبح شبه مطفأة ولا تستقبل أي لمسة.
+ * لا تعرض إلا ما يخص صاحبها، وأثناء الليل تصبح شبه مطفأة ولا تستقبل أي لمسة.
+ *
+ * **ولا صوت منها في الجولة**: الراوي على جهاز واحد لأنه يُعطي أوامر، وصوتان
+ * يقولان «افتحوا أعينكم» في لحظتين مختلفتين يُفسدان الليل. الاستثناء الوحيد
+ * موسيقى ما قبل الجولة — مزاج لا تعليمة — وتصمت لحظةَ تبدأ الجولة.
  */
 
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useLobbyMusic } from '../../audio/useLobbyMusic';
 import { GAME_CONFIG } from '../../config/game.config';
 import { availableCharacters, ROSTER } from '../../game/roster';
 import { slotOfNightPhase } from '../../game/types';
@@ -47,6 +51,14 @@ export function PlayerScreen() {
   useEffect(() => {
     document.body.dataset.night = String(isNight);
   }, [isNight]);
+
+  /*
+    الموسيقى تدور على جهاز اللاعب أيضًا — من شاشة الانضمام حتى بدء الجولة.
+    وإعدادها إعداد غرفة: يُطفئه المضيف فيصمت الجميع.
+  */
+  useLobbyMusic(
+    phase === 'lobby' && (state?.settings.musicEnabled ?? GAME_CONFIG.defaults.musicEnabled),
+  );
 
   /* اهتزاز صامت عند حلول موعد اللاعب — لا صوت ولا إضاءة */
   useEffect(() => {

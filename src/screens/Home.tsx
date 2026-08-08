@@ -8,6 +8,7 @@ import { GAME_CONFIG } from '../config/game.config';
 import type { RoomSettings } from '../game/types';
 import { useSession, rememberSession, recallSession, forgetSession } from '../net/session';
 import { isFirebaseConfigured } from '../net/env';
+import { useLobbyMusic } from '../audio/useLobbyMusic';
 import { SceneBackdrop, preloadScenes } from '../ui/components/SceneBackdrop';
 import { preloadDice } from '../ui/components/Dice';
 import { Badge, Button, Panel } from '../ui/components/kit';
@@ -48,6 +49,9 @@ export function Home() {
   const [busy, setBusy] = useState(false);
   const [previous, setPrevious] = useState(recallSession());
   const online = isFirebaseConfigured();
+
+  /* من لحظة فتح اللعبة — لا غرفة بعد، فالإعداد الافتراضي هو الحكم */
+  useLobbyMusic(GAME_CONFIG.defaults.musicEnabled);
 
   useEffect(() => {
     document.body.dataset.night = 'false';

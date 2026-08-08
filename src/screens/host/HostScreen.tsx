@@ -97,10 +97,10 @@ export function HostScreen() {
     null,
   );
   /*
-    موسيقى ما قبل الجولة: تدور في الردهة وحدها وتخفت حين تبدأ الجولة. جهاز
-    المضيف يُسمِعها للطاولة، كما يفعل بالراوي — ولا صوت من جهاز لاعب إطلاقًا.
+    موسيقى ما قبل الجولة تدور على **كل** جهاز — بخلاف الراوي الذي يبقى على
+    جهاز واحد لأنه يُعطي أوامر. وتصمت لحظةَ يبدأ توزيع الأدوار.
   */
-  useLobbyMusic(isHost && phase === 'lobby' && (settings?.musicEnabled ?? true));
+  useLobbyMusic(phase === 'lobby' && (settings?.musicEnabled ?? true));
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [countdown, setCountdown] = useState<{ value: number; total: number } | null>(null);
