@@ -299,6 +299,16 @@ export function HostScreen() {
         return;
       }
 
+      /*
+        الإيقاف كان صامتًا بينما الاستئناف يُنطق — وهذا أسوأ ترتيب ممكن:
+        الطاولة مغمضة العينين تنتظر أمرًا توقّف، فلا تعرف أنه توقّف. الجملة
+        مكتوبة ومسجَّلة منذ البداية، ولم تكن تُنادى من أي مكان.
+      */
+      if (guard === 'paused') {
+        void narrator.say(narrator.script.paused);
+        return;
+      }
+
       if (guard === 'discussion') {
         void narrator.say(narrator.script.discussion);
         return;
